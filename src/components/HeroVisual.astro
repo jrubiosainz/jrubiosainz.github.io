@@ -1,0 +1,22 @@
+---
+import Companion from "./Companion.astro";
+import { copy, type Language } from "../content/site";
+const { lang } = Astro.props as { lang: Language };
+const t = copy[lang];
+---
+<div class="hero-world">
+  <div class="world-orbit orbit-one"></div>
+  <div class="world-orbit orbit-two"></div>
+  <svg class="world-drawing" viewBox="0 0 600 660" aria-hidden="true">
+    <path d="M55 392C-30 244 154 60 363 98S632 340 514 523" fill="none" stroke="#74718c" stroke-width="1" stroke-dasharray="3 7"/>
+    <ellipse cx="301" cy="484" rx="224" ry="70" fill="none" stroke="#aaa0c8" transform="rotate(-15 301 484)"/>
+    <path d="M87 196L156 181M110 159L128 221M451 543L488 532M463 517L476 558" stroke="#74718c" stroke-width="1.5"/>
+    <circle cx="465" cy="132" r="12" fill="#f48160"/><circle cx="86" cy="443" r="6" fill="#9990cd"/>
+    <path d="M166 79L171 62L177 79L193 85L177 91L171 108L165 91L149 85Z" fill="#282838"/>
+    <path d="M526 372V320H547M63 541V571H95" fill="none" stroke="#282838"/>
+    <text x="518" y="304" fill="#696674" font-size="10" font-family="monospace" transform="rotate(90 518 304)">{lang === "es" ? "OBJETO_001 / ORIGINAL" : "OBJECT_001 / ORIGINAL"}</text>
+  </svg>
+  <div class="companion-float"><Companion id="courier-hero" /></div>
+  <div class="world-coordinate mono" aria-hidden="true">x: {lang === "es" ? "curiosidad" : "curious"}<br/>y: {lang === "es" ? "posibilidad" : "possible"}</div>
+  <div class="world-caption"><span class="little-star">✳</span><span><strong>{t.companionName}</strong><small>{t.companionType}</small></span></div>
+</div>
