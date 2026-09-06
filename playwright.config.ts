@@ -10,6 +10,9 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4322",
     browserName: "chromium",
+    launchOptions: {
+      args: process.env.CI ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [],
+    },
     viewport: { width: 1440, height: 1000 },
     trace: "retain-on-failure",
   },

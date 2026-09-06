@@ -9,6 +9,91 @@ export const identity = {
   site: "https://jrubiosainz.github.io",
 };
 
+export interface LinkedInPublication {
+  id: string;
+  date: string;
+  url: string;
+  title: Record<Language, string>;
+  description: Record<Language, string>;
+  kind: Record<Language, string>;
+  tools: Record<Language, string>;
+  image: {
+    src: string;
+    width: number;
+    height: number;
+    alt: Record<Language, string>;
+  };
+}
+
+export const publications: LinkedInPublication[] = [
+  {
+    id: "maple-leaf",
+    date: "2025-01-01",
+    url: "https://www.linkedin.com/posts/jrubiosainz_projectodyssey-aimovie-mapleleaf-activity-7280313215169814528-p4FV",
+    title: {
+      en: "Maple Leaf.",
+      es: "Maple Leaf.",
+    },
+    description: {
+      en: "An original story, made into an AI short film. A 2024 creative project exploring the entire filmmaking process through generative video, voice and music.",
+      es: "Una historia original convertida en cortometraje con IA. Un proyecto creativo de 2024 que explora todo el proceso cinematográfico con vídeo, voz y música generativos.",
+    },
+    kind: { en: "ORIGINAL AI SHORT FILM", es: "CORTOMETRAJE ORIGINAL CON IA" },
+    tools: { en: "GENERATIVE VIDEO / VOICE / MUSIC", es: "VÍDEO GENERATIVO / VOZ / MÚSICA" },
+    image: {
+      src: "/media/maple-leaf.jpg", width: 1260, height: 720,
+      alt: { en: "Original Maple Leaf video poster: a red maple-leaf character surfing a wave.", es: "Portada original del vídeo Maple Leaf: un personaje de hoja de arce roja surfea una ola." },
+    },
+  },
+  {
+    id: "ai-rpg",
+    date: "2026-01-25",
+    url: "https://www.linkedin.com/posts/jrubiosainz_github-copilot-custom-agents-unity-mcp-activity-7421279962546020352-IH7s",
+    title: { en: "A world that\ntalks back.", es: "Un mundo que\nte responde." },
+    description: {
+      en: "A 3D RPG prototype with conversational characters connected to Microsoft Foundry, Bing search and Microsoft Fabric. Built with GitHub Copilot, custom agents and Unity MCP.",
+      es: "Un prototipo de RPG 3D con personajes conversacionales conectados a Microsoft Foundry, búsquedas en Bing y Microsoft Fabric. Creado con GitHub Copilot, agentes personalizados y Unity MCP.",
+    },
+    kind: { en: "3D AI RPG / TECHNICAL PROTOTYPE", es: "RPG 3D CON IA / PROTOTIPO TÉCNICO" },
+    tools: { en: "UNITY / COPILOT / MICROSOFT FOUNDRY", es: "UNITY / COPILOT / MICROSOFT FOUNDRY" },
+    image: {
+      src: "/media/ai-rpg.jpg", width: 800, height: 474,
+      alt: { en: "Original LinkedIn image of the 3D RPG: a character answers a question using Bing search.", es: "Imagen original del RPG 3D publicada en LinkedIn: un personaje responde a una pregunta con búsquedas en Bing." },
+    },
+  },
+  {
+    id: "desktop-assistant",
+    date: "2026-01-23",
+    url: "https://www.linkedin.com/posts/jrubiosainz_yesterday-microsoft-released-copilot-sdk-activity-7420372024268591104-5U2B",
+    title: { en: "Beyond the\nchat window.", es: "Más allá de\nla ventana del chat." },
+    description: {
+      en: "A desktop-assistant prototype built with Copilot SDK to interact with applications, files and system settings. Inspired by Burke Holland's example, then explored through my own implementation.",
+      es: "Un prototipo de asistente de escritorio con Copilot SDK para interactuar con aplicaciones, archivos y ajustes del sistema. Inspirado en el ejemplo de Burke Holland y explorado con mi propia implementación.",
+    },
+    kind: { en: "DESKTOP ASSISTANT / COPILOT SDK", es: "ASISTENTE DE ESCRITORIO / COPILOT SDK" },
+    tools: { en: "COPILOT SDK / APPLICATIONS / AUTOMATION", es: "COPILOT SDK / APLICACIONES / AUTOMATIZACIÓN" },
+    image: {
+      src: "/media/desktop-assistant.jpg", width: 800, height: 613,
+      alt: { en: "Original LinkedIn image of Desktop Assistant, showing application, file and system interaction tools.", es: "Imagen original de Desktop Assistant publicada en LinkedIn, con herramientas para aplicaciones, archivos y ajustes del sistema." },
+    },
+  },
+];
+
+export const professionalNotes = [
+  {
+    title: "OGECON",
+    date: "2024-06-21",
+    url: "https://es.linkedin.com/posts/jrubiosainz_ogecon-activity-7209994690199244801-XBiV",
+    description: { en: "Speaker · AI adoption and its impact", es: "Ponente · adopción de IA y su impacto" },
+  },
+  {
+    title: "Microsoft AI Tour 2026",
+    date: "2026-02-16",
+    url: "https://es.linkedin.com/posts/jrubiosainz_microsoftaitour-activity-7429234235678285826-b2HH",
+    description: { en: "Session announcement · scaling AI in Azure", es: "Anuncio de sesión · IA a gran escala en Azure" },
+  },
+];
+
 export const en = {
   metaTitle: "Jesús Rubio Sainz — Beyond the interface",
   metaDescription: "Jesús Rubio Sainz. Cloud Solution Architect, AI & Apps at Microsoft. Professional profile and public updates on LinkedIn.",
@@ -20,6 +105,59 @@ export const en = {
   linkedin: "My professional story, on LinkedIn",
   language: "Change language",
   independent: "Personal website. Views are my own.",
+  home: "Return to the opening",
+  nav: "Story chapters",
+  opening: "Signal",
+  person: "Human",
+  practice: "Systems",
+  record: "On record",
+  contact: "Connect",
+  edition: "A STUDY IN HUMAN × TECHNOLOGY",
+  enter: "Scroll to assemble",
+  heroLine1: "JESÚS",
+  heroLine2: "RUBIO SAINZ.",
+  heroAside: "Not another interface.\nThe person behind it.",
+  heroIndex: "01 — INITIAL CONDITIONS",
+  humanIndex: "02 — HUMAN LAYER",
+  humanTitle: "Behind every\nsystem. Someone.",
+  humanCopy: "I'm Jesús. Technology is the medium. A human perspective is the starting point.",
+  portraitSource: "Portrait · my public profile",
+  practiceIndex: "03 — PROFESSIONAL LAYER",
+  practiceTitle: "AI. Applications.\nArchitecture.",
+  practiceCopy: "Cloud Solution Architect, AI & Apps at Microsoft.",
+  practiceNote: "My professional background and public work, in my own words, on LinkedIn.",
+  profile: "Open my LinkedIn profile",
+  recordIndex: "04 — PUBLIC RECORD",
+  recordTitle: "What I share.\nWhere I share it.",
+  recordCopy: "Professional updates, demonstrations and conversations. Published on LinkedIn.",
+  recordLink: "Read my publications",
+  finalIndex: "07 — DIRECT CONNECTION",
+  finalTitle: "The next layer\nstarts with a conversation.",
+  finalCopy: "Let's connect.",
+  finalLink: "Find me on LinkedIn",
+  returnTop: "Disassemble / return",
+  motionOn: "Motion on",
+  motionOff: "Motion off",
+  motionToggle: "Enable scene motion",
+  sceneDescription: "An original titanium exosuit assembles into a human silhouette as you scroll. A particle portrait reveals Jesús beneath the layers.",
+  staticDescription: "Original titanium exosuit. Complete static scene.",
+  sceneLoading: "Assembling the scene",
+  sceneReady: "Scene ready",
+  sceneFallback: "Static scene",
+  progress: "Assembly progress",
+  languageCommand: "Reconstruct in",
+  languageHint: "Same person. Another language.",
+  identityLabel: "IDENTITY",
+  layerLabel: "ACTIVE LAYER",
+  statusLabel: "STRUCTURE",
+  structure: "HUMAN / OPEN SYSTEM",
+  photoAlt: "Jesús Rubio Sainz",
+  projectBoundary: "Professional content sourced from LinkedIn.",
+  publicationOpen: "Read the original post",
+  professionalNotes: "Professional activity / LinkedIn",
+  nextProject: "Next transmission",
+  published: "Published on LinkedIn",
+  mediaSource: "Image from the original publication",
 };
 export const es: typeof en = {
   metaTitle: "Jesús Rubio Sainz — Más allá de la interfaz",
@@ -32,5 +170,58 @@ export const es: typeof en = {
   linkedin: "Mi trayectoria profesional, en LinkedIn",
   language: "Cambiar idioma",
   independent: "Web personal. Mis opiniones son propias.",
+  home: "Volver al comienzo",
+  nav: "Capítulos de la historia",
+  opening: "Señal",
+  person: "Persona",
+  practice: "Sistemas",
+  record: "Publicaciones",
+  contact: "Conectar",
+  edition: "UN ESTUDIO DE PERSONA × TECNOLOGÍA",
+  enter: "Desliza para ensamblar",
+  heroLine1: "JESÚS",
+  heroLine2: "RUBIO SAINZ.",
+  heroAside: "No es otra interfaz.\nEs la persona que hay detrás.",
+  heroIndex: "01 — CONDICIONES INICIALES",
+  humanIndex: "02 — CAPA HUMANA",
+  humanTitle: "Detrás de cada\nsistema. Alguien.",
+  humanCopy: "Soy Jesús. La tecnología es el medio. La perspectiva humana, el punto de partida.",
+  portraitSource: "Retrato · mi perfil público",
+  practiceIndex: "03 — CAPA PROFESIONAL",
+  practiceTitle: "IA. Aplicaciones.\nArquitectura.",
+  practiceCopy: "Arquitecto de Soluciones Cloud, IA y Aplicaciones en Microsoft.",
+  practiceNote: "Mi trayectoria profesional y mi trabajo público, en mis propias palabras, en LinkedIn.",
+  profile: "Abrir mi perfil de LinkedIn",
+  recordIndex: "04 — REGISTRO PÚBLICO",
+  recordTitle: "Lo que comparto.\nDonde lo comparto.",
+  recordCopy: "Actualidad profesional, demostraciones y conversaciones. Publicadas en LinkedIn.",
+  recordLink: "Leer mis publicaciones",
+  finalIndex: "07 — CONEXIÓN DIRECTA",
+  finalTitle: "La siguiente capa\nempieza con una conversación.",
+  finalCopy: "Conectemos.",
+  finalLink: "Encuéntrame en LinkedIn",
+  returnTop: "Desmontar / volver",
+  motionOn: "Movimiento sí",
+  motionOff: "Movimiento no",
+  motionToggle: "Activar movimiento de la escena",
+  sceneDescription: "Un exoesqueleto original de titanio se ensambla en una silueta humana al hacer scroll. Un retrato de partículas revela a Jesús bajo las capas.",
+  staticDescription: "Exoesqueleto original de titanio. Escena estática completa.",
+  sceneLoading: "Ensamblando la escena",
+  sceneReady: "Escena preparada",
+  sceneFallback: "Escena estática",
+  progress: "Progreso de ensamblaje",
+  languageCommand: "Reconstruir en",
+  languageHint: "La misma persona. Otro idioma.",
+  identityLabel: "IDENTIDAD",
+  layerLabel: "CAPA ACTIVA",
+  statusLabel: "ESTRUCTURA",
+  structure: "PERSONA / SISTEMA ABIERTO",
+  photoAlt: "Jesús Rubio Sainz",
+  projectBoundary: "Contenido profesional basado en LinkedIn.",
+  publicationOpen: "Leer la publicación original",
+  professionalNotes: "Actividad profesional / LinkedIn",
+  nextProject: "Siguiente transmisión",
+  published: "Publicado en LinkedIn",
+  mediaSource: "Imagen de la publicación original",
 };
 export const copy = { en, es };
