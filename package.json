@@ -16,18 +16,14 @@
     "social": "node scripts/render-social.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/manrope": "5.3.0",
-    "@fontsource-variable/space-grotesk": "5.3.0",
-    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/kanit": "5.3.0",
     "animejs": "^4.5.0",
-    "astro": "7.2.9",
-    "three": "^0.185.1"
+    "astro": "7.2.9"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@playwright/test": "1.63.0",
     "@types/node": "^22.20.1",
-    "@types/three": "^0.185.4",
     "typescript": "~5.9.3"
   }
 }
