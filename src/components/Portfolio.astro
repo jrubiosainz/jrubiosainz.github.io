@@ -1,26 +1,28 @@
 ---
-import "@fontsource-variable/space-grotesk";
-import "@fontsource-variable/manrope";
-import "@fontsource/ibm-plex-mono/400.css";
-import "../styles/void.css";
-import { copy, identity, publications, professionalNotes, type Language } from "../content/site";
+import "@fontsource/kanit/latin-300.css";
+import "@fontsource/kanit/latin-400.css";
+import "@fontsource/kanit/latin-500.css";
+import "@fontsource/kanit/latin-600.css";
+import "@fontsource/kanit/latin-700.css";
+import "@fontsource/kanit/latin-800.css";
+import "@fontsource/kanit/latin-900.css";
+import "../styles/creator.css";
+import { copy, identity, publications, professionalNotes, focusAreas, type Language } from "../content/site";
+
 const { lang } = Astro.props as { lang: Language };
 const t = copy[lang];
 const canonical = `${identity.site}${lang === "es" ? "/es/" : "/"}`;
-const chapters = [
-  { id: "signal", title: t.opening },
-  { id: "human", title: t.person },
-  { id: "systems", title: t.practice },
-  ...publications.map(publication => ({ id: publication.id, title: publication.title[lang].replace("\n", " ") })),
-  { id: "connect", title: t.contact },
-];
+const notes = [t.filmNote, t.worldNote, t.agentNote];
+const icons = ["orbit", "cloud", "command", "prism"];
+const labels = [t.about, t.approach, t.projects, t.contact];
+const ids = ["human", "systems", "projects", "connect"];
 ---
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#080a0e" />
+    <meta name="theme-color" content="#0c0c0c" />
     <title>{t.metaTitle}</title>
     <meta name="description" content={t.metaDescription} />
     <link rel="canonical" href={canonical} />
@@ -33,12 +35,12 @@ const chapters = [
     <meta property="og:description" content={t.metaDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={lang === "es" ? "es_ES" : "en_US"} />
-    <meta property="og:image" content={`${identity.site}/identity-preview${lang === "es" ? "-es" : ""}.png`} />
+    <meta property="og:image" content={`${identity.site}/creator-preview${lang === "es" ? "-es" : ""}.png`} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={t.metaTitle} />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "Person", name: identity.name, url: identity.site, jobTitle: identity.role, worksFor: { "@type": "Organization", name: identity.organization }, sameAs: [identity.linkedin] })} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "Person", name: identity.name, url: identity.site, jobTitle: identity.role, worksFor: { "@type": "Organization", name: identity.organization }, sameAs: [identity.linkedin, identity.github] })} />
     <script is:inline>
       try {
         const url = new URL(location.href);
@@ -47,92 +49,120 @@ const chapters = [
         const navigation = performance.getEntriesByType("navigation")[0];
         if (url.pathname === "/" && !explicit && navigation?.type !== "back_forward" && localStorage.getItem("portfolio-language") === "es") location.replace("/es/" + url.search + url.hash);
         document.documentElement.dataset.motion = localStorage.getItem("portfolio-motion") === "off" || matchMedia("(prefers-reduced-motion: reduce)").matches ? "off" : "on";
-      } catch { /* Browser storage is optional; semantic links and static art remain available. */ }
+      } catch { /* Preferences are optional; the static site and native links remain usable. */ }
     </script>
   </head>
   <body>
     <a class="skip-link" href="#main">{t.skip}</a>
-    <div class="scene-stage" id="scene-stage" role="img" aria-label={t.sceneDescription} data-loading={t.sceneLoading} data-ready={t.sceneReady} data-fallback={t.sceneFallback}>
-      <div class="stage-grid" aria-hidden="true"></div>
-      <div class="stage-aura" aria-hidden="true"></div>
-      <img class="static-armor" src="/models/exosuit-fallback.png" alt="" width="1000" height="1300" fetchpriority="high" />
-      <div class="scene-vignette" aria-hidden="true"></div>
-      <div class="coordinate coordinate-top mono" aria-hidden="true"><span>JRS—001</span><span>{t.structure}</span></div>
-      <div class="coordinate coordinate-bottom mono" aria-hidden="true"><span>θ <span id="scene-angle">−12.00</span>°</span><span id="scene-state">{t.sceneFallback}</span></div>
-      <div class="scene-cross cross-a" aria-hidden="true"></div><div class="scene-cross cross-b" aria-hidden="true"></div>
+    <div class="utility-dock">
+      <button type="button" id="motion-toggle" class="motion-control" data-on={t.motionOn} data-off={t.motionOff} aria-label={t.motionToggle} aria-pressed="true" hidden>
+        <span class="motion-icon" aria-hidden="true">Ⅱ</span><span class="motion-text">{t.motionOn}</span>
+      </button>
+      <details class="locale-console">
+        <summary aria-label={t.language}><span aria-hidden="true">[</span>{lang.toUpperCase()}<span aria-hidden="true">]</span></summary>
+        <div class="locale-panel">
+          <p class="eyebrow">{t.languageCommand}<span aria-hidden="true">_</span></p>
+          <p class="locale-hint">{t.languageHint}</p>
+          <a href="/?lang=en" lang="en" hreflang="en" data-language="en" aria-current={lang === "en" ? "page" : undefined}><span>01</span>English<span aria-hidden="true">↗</span></a>
+          <a href="/es/" lang="es" hreflang="es" data-language="es" aria-current={lang === "es" ? "page" : undefined}><span>02</span>Español<span aria-hidden="true">↗</span></a>
+        </div>
+      </details>
     </div>
-    <header class="site-header">
-      <a class="wordmark" href="#signal" aria-label={t.home}>JRS<span class="wordmark-slash" aria-hidden="true">/</span></a>
-      <span class="header-caption mono">{t.edition}</span>
-      <a class="header-link" href={identity.linkedin}>LinkedIn <span aria-hidden="true">↗</span></a>
-      <div class="header-controls">
-        <button type="button" class="motion-control mono" id="motion-toggle" data-on={t.motionOn} data-off={t.motionOff} aria-label={t.motionToggle} aria-pressed="true" hidden><span class="motion-glyph" aria-hidden="true">Ⅱ</span><span class="motion-text">{t.motionOn}</span></button>
-        <details class="locale-console">
-          <summary aria-label={t.language}><span class="locale-corners" aria-hidden="true">[</span>{lang.toUpperCase()}<span class="locale-corners" aria-hidden="true">]</span></summary>
-          <div class="locale-panel"><p class="mono">{t.languageCommand}<span aria-hidden="true">_</span></p><span class="locale-hint">{t.languageHint}</span><a href="/?lang=en" lang="en" hreflang="en" data-language="en" aria-current={lang === "en" ? "page" : undefined}><span class="mono">01</span>English<span aria-hidden="true">↗</span></a><a href="/es/" lang="es" hreflang="es" data-language="es" aria-current={lang === "es" ? "page" : undefined}><span class="mono">02</span>Español<span aria-hidden="true">↗</span></a></div>
-        </details>
-      </div>
-    </header>
-    <nav class="chapter-nav" aria-label={t.nav}>
-      {chapters.map((chapter, index) => <a href={`#${chapter.id}`} aria-label={chapter.title} class:list={[index === 0 && "active"]}><span class="chapter-number mono">0{index + 1}</span><span class="chapter-track"></span><span class="chapter-name mono">{chapter.title}</span></a>)}
-    </nav>
-    <div class="assembly-meter" aria-hidden="true"><span class="mono">{t.progress}</span><span class="meter-track"><span id="meter-fill"></span></span><span class="mono" id="meter-value">000</span></div>
     <main id="main">
-      <section class="story-section opening-section" id="signal" aria-labelledby="intro-title" data-layer="01">
-        <div class="opening-copy">
-          <p class="section-label mono">{t.heroIndex}</p>
-          <p class="hero-role">{t.role}<span>{t.discipline}</span></p>
-          <h1 id="intro-title"><span>{t.heroLine1}</span><span>{t.heroLine2}</span></h1>
-          <div class="hero-baseline"><p>{t.heroAside}</p><a class="scroll-instruction mono" href="#human"><span class="scroll-line" aria-hidden="true"></span>{t.enter}<span aria-hidden="true">↓</span></a></div>
+      <section class="hero" id="signal" aria-labelledby="hero-title" data-chapter>
+        <header class="site-header">
+          <nav aria-label={t.nav}>
+            {ids.map((id, index) => <a href={`#${id}`}>{labels[index]}</a>)}
+          </nav>
+        </header>
+        <div class="hero-title-wrap"><h1 class="chrome-type" id="hero-title">{t.hero}</h1></div>
+        <div class="hero-identity"><span>JESÚS RUBIO SAINZ</span><span>{t.role} — {t.discipline}</span></div>
+        <div class="portrait-stage">
+          <div class="portrait-halo" aria-hidden="true"></div>
+          <div class="portrait-scroll">
+            <div class="portrait-magnet">
+              <img class="hero-portrait" src="/creator/portrait.png" alt={t.portraitAlt} width="1100" height="1300" fetchpriority="high" />
+            </div>
+          </div>
+          <span class="portrait-orbit orbit-one" aria-hidden="true">✳</span>
+          <span class="portrait-orbit orbit-two" aria-hidden="true">+</span>
         </div>
-        <div class="intro-reference mono" aria-hidden="true"><span>{lang === "es" ? "FUENTE / LINKEDIN" : "SOURCE / LINKEDIN"}</span><span>0.000 → ∞</span></div>
+        <div class="hero-bottom">
+          <p class="hero-statement">{t.heroAside}</p>
+          <a class="scroll-cue" href="#human"><span aria-hidden="true">↓</span>{t.scroll}</a>
+          <a class="contact-pill" href={identity.linkedin}>{t.contactMe}<span aria-hidden="true">↗</span></a>
+        </div>
+        <span class="hero-dimension eyebrow">{t.heroFootnote}</span>
       </section>
-      <section class="story-section human-section" id="human" aria-labelledby="human-title" data-layer="02">
-        <div class="section-copy">
-          <p class="section-label mono">{t.humanIndex}</p>
-          <h2 id="human-title">{t.humanTitle}</h2>
-          <p class="section-description">{t.humanCopy}</p>
-          <figure class="portrait-reference"><img src="/portrait.jpg" alt={t.photoAlt} width="400" height="400" loading="lazy" /><figcaption class="mono">{t.portraitSource}<span>J. RUBIO SAINZ</span></figcaption></figure>
+
+      <section class="marquee-section" aria-label={t.montage}>
+        <div class="section-line"><span class="eyebrow">{t.montage}</span><a href="#projects">{t.montageLink} <span aria-hidden="true">↗</span></a></div>
+        <div class="marquee-viewport" aria-hidden="true">
+          {[0, 1].map(row => <div class:list={["marquee-row", row === 1 && "marquee-reverse"]} data-direction={row === 0 ? "1" : "-1"}>
+            {[0, 1, 2].map(() => <div class="marquee-set">
+              {publications.map((publication, index) => row === 0 ? <div class:list={["marquee-tile", `tile-${publication.id}`]}>
+                <img src={publication.image.src} width={publication.image.width} height={publication.image.height} alt="" loading="lazy" />
+                <div class="tile-caption"><span>{index === 0 ? "MAPLE LEAF" : index === 1 ? "3D AI RPG" : "DESKTOP ASSISTANT"}</span><span>↗</span></div>
+              </div> : <div class:list={["marquee-tile", "concept-tile", `concept-${index}`]}>
+                <span class="eyebrow">{publication.tools[lang]}</span><strong>{index === 0 ? t.conceptFilm : index === 1 ? t.conceptWorld : t.conceptAgent}</strong>
+                <img src={`/creator/${icons[(index + 1) % icons.length]}.png`} alt="" width="500" height="500" loading="lazy" />
+                <span class="tile-serial">JRS / 0{index + 1}</span>
+              </div>)}
+            </div>)}
+          </div>)}
         </div>
-        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{t.identityLabel}<br/>JRS / 001</span></div>
       </section>
-      <section class="story-section systems-section" id="systems" aria-labelledby="systems-title" data-layer="03">
-        <div class="section-copy">
-          <p class="section-label mono">{t.practiceIndex}</p>
-          <h2 id="systems-title">{t.practiceTitle}</h2>
-          <p class="section-description">{t.practiceCopy}</p>
-          <p class="supporting-copy">{t.practiceNote}</p>
-          <a class="signal-link" href={identity.linkedin}>{t.profile}<span aria-hidden="true">↗</span></a>
-          <div class="professional-notes"><p class="mono">{t.professionalNotes}</p>{professionalNotes.map(note => <a href={note.url}><time class="mono" datetime={note.date}>{note.date.slice(0, 4)}</time><span><strong>{note.title}</strong><span>{note.description[lang]}</span></span><span aria-hidden="true">↗</span></a>)}</div>
+
+      <section class="about-section" id="human" aria-labelledby="about-title" data-chapter>
+        {icons.map((icon, index) => <img class:list={["about-object", `about-object-${index + 1}`]} src={`/creator/${icon}.png`} alt="" aria-hidden="true" width="500" height="500" loading="lazy" />)}
+        <div class="about-content">
+          <p class="eyebrow">{t.aboutKicker}</p>
+          <h2 class="chrome-type section-heading" id="about-title">{t.aboutTitle}</h2>
+          <p class="about-copy"><span class="sr-only">{t.aboutCopy}</span><span class="animated-text" aria-hidden="true">{t.aboutCopy.split(" ").map(word => <><span class="reveal-word">{[...word].map(char => <span class="reveal-char">{char}</span>)}</span>{" "}</>)}</span></p>
+          <div class="about-signature"><img src="/portrait.jpg" alt="" width="400" height="400" loading="lazy" /><span>{t.aboutSignature}<small>Jesús Rubio Sainz</small></span></div>
+          <a class="contact-pill" href={identity.linkedin}>{t.profile}<span aria-hidden="true">↗</span></a>
         </div>
-        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{t.statusLabel}<br/>AI / APPS / CLOUD</span></div>
       </section>
-      {publications.map((publication, index) => <section class:list={["story-section", "record-section", `record-${publication.id}`]} id={publication.id} aria-labelledby={`${publication.id}-title`} data-layer={`0${index + 4}`}>
-        <div class="section-copy">
-          <p class="section-label mono">0{index + 4} — {publication.kind[lang]}</p>
-          <h2 id={`${publication.id}-title`}>{publication.title[lang]}</h2>
-          <p class="section-description">{publication.description[lang]}</p>
-          <figure class="project-media">
-            <a href={publication.url} aria-label={`${t.publicationOpen}: ${publication.title[lang].replace("\n", " ")}`}>
-              <img src={publication.image.src} width={publication.image.width} height={publication.image.height} alt={publication.image.alt[lang]} loading="lazy" decoding="async" />
-            </a>
-            <figcaption class="mono"><span>{t.mediaSource}</span><span>0{index + 1} / 03</span></figcaption>
-          </figure>
-          <div class="publication-date mono"><span>{t.published}</span><time datetime={publication.date}>{new Intl.DateTimeFormat(lang === "es" ? "es-ES" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(publication.date))}</time></div>
-          <a class="signal-link" href={publication.url}>{t.publicationOpen}<span aria-hidden="true">↗</span></a>
+
+      <section class="focus-section" id="systems" aria-labelledby="focus-title" data-chapter>
+        <div class="section-line"><span class="eyebrow">{t.approachKicker}</span><span class="focus-spark" aria-hidden="true">✳</span></div>
+        <h2 class="section-heading" id="focus-title">{t.approachTitle}</h2>
+        <p class="focus-intro">{t.approachIntro}</p>
+        <div class="focus-list">
+          {focusAreas.map((focus, index) => <article class="focus-item"><span class="focus-number" aria-hidden="true">0{index + 1}</span><div><h3>{focus.title[lang]}</h3><p>{focus.description[lang]}</p></div><span class="focus-arrow" aria-hidden="true">↗</span></article>)}
         </div>
-        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{lang === "es" ? "CAPA" : "LAYER"} / 0{index + 4}<br/>{publication.tools[lang]}</span></div>
-      </section>)}
-      <section class="story-section connect-section" id="connect" aria-labelledby="connect-title" data-layer="07">
-        <div class="section-copy">
-          <p class="section-label mono">{t.finalIndex}</p>
-          <h2 id="connect-title">{t.finalTitle}</h2>
-          <a class="final-link" href={identity.linkedin}>{t.finalCopy}<span aria-hidden="true">↗</span></a>
-          <a class="return-link mono" href="#signal"><span aria-hidden="true">↶</span>{t.returnTop}</a>
+        <aside class="professional-notes" aria-label={t.professionalNotes}>
+          <p class="eyebrow">{t.professionalNotes}</p>
+          {professionalNotes.map(note => <a href={note.url}><time datetime={note.date}>{note.date.slice(0, 4)}</time><span><strong>{note.title}</strong><small>{note.description[lang]}</small></span><span aria-hidden="true">↗</span></a>)}
+        </aside>
+      </section>
+
+      <section class="projects-section" id="projects" aria-labelledby="projects-title" data-chapter>
+        <div class="section-line"><span class="eyebrow">{t.projectsKicker}</span><span class="eyebrow">01 — 03</span></div>
+        <h2 class="chrome-type section-heading" id="projects-title">{t.projectsTitle}</h2>
+        <p class="projects-intro">{t.projectsIntro}</p>
+        <div class="project-stack">
+          {publications.map((publication, index) => <article class="project-card" id={publication.id} data-index={index} data-chapter style={`--index:${index}`} aria-labelledby={`${publication.id}-title`}>
+            <div class="card-top"><span class="project-number" aria-hidden="true">0{index + 1}</span><div class="project-heading"><p class="eyebrow">{publication.kind[lang]}</p><h3 id={`${publication.id}-title`}>{index === 0 ? "Maple Leaf" : index === 1 ? "3D AI RPG" : "Desktop Assistant"}</h3></div><a class="ghost-pill" href={publication.url}>{t.publicationOpen}<span aria-hidden="true">↗</span></a></div>
+            <div class="project-composition">
+              <div class="project-side"><div class:list={["project-concept", `concept-${index}`]}><span class="eyebrow">{t.editorialVisual}</span><strong>{notes[index]}</strong><img src={`/creator/${icons[(index + 1) % icons.length]}.png`} alt="" width="500" height="500" loading="lazy" /></div><p class="project-description">{publication.description[lang]}</p></div>
+              <figure class:list={["project-image", `image-${index}`]}><a href={publication.url} aria-label={`${t.publicationOpen}: ${publication.title[lang].replace("\n", " ")}`}><img src={publication.image.src} width={publication.image.width} height={publication.image.height} alt={publication.image.alt[lang]} loading="lazy" /></a><figcaption><span>{t.mediaSource}</span><time datetime={publication.date}>{new Intl.DateTimeFormat(lang === "es" ? "es-ES" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(publication.date))}</time></figcaption></figure>
+            </div>
+          </article>)}
         </div>
+      </section>
+
+      <section class="contact-section" id="connect" aria-labelledby="contact-title" data-chapter>
+        <p class="eyebrow">{t.contactKicker}</p>
+        <h2 id="contact-title">{t.contactTitle}</h2>
+        <div class="contact-bottom"><p>{t.contactCopy}</p><a class="contact-pill" href={identity.linkedin}>{t.contactMe}<span aria-hidden="true">↗</span></a></div>
       </section>
     </main>
-    <footer class="site-footer"><span class="footer-name">{identity.name}</span><span class="mono">{t.independent}</span><div class="footer-links"><a href={identity.linkedin}>LinkedIn ↗</a><a href={identity.github}>GitHub ↗</a></div></footer>
-    <script src="../scripts/experience.ts"></script>
+    <footer class="site-footer">
+      <a class="footer-name" href="#signal">JESÚS RUBIO SAINZ<span>{t.footerLine}</span></a>
+      <p>{t.independent}</p>
+      <div class="footer-links"><a href={identity.linkedin}>LinkedIn ↗</a><a href={identity.github}>GitHub ↗</a><a href="#signal">{t.returnTop} ↑</a></div>
+    </footer>
+    <script src="../scripts/creator.ts"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { copy, identity, publications, professionalNotes } from "../src/content/site.ts";
+import { copy, identity, publications, professionalNotes, focusAreas } from "../src/content/site.ts";
 
 test("Both language dictionaries are complete", () => {
   assert.deepEqual(Object.keys(copy.en).sort(), Object.keys(copy.es).sort());
@@ -28,21 +28,31 @@ test("Featured projects and professional activities cite exact LinkedIn posts in
     assert.ok(entry.description.en.length > 0 && entry.description.es.length > 0);
   }
 });
-test("Original model and its static render are present, with separately movable mesh nodes", async () => {
-  const glb = await readFile("public/models/exosuit.glb");
-  assert.equal(glb.subarray(0, 4).toString(), "glTF");
-  const length = glb.readUInt32LE(12);
-  const document = JSON.parse(glb.subarray(20, 20 + length).toString());
-  assert.ok(document.meshes.length > 40);
-  assert.ok(document.nodes.filter((node: { mesh?: number }) => node.mesh !== undefined).length > 40);
-  const image = await readFile("public/models/exosuit-fallback.png");
-  assert.ok(image.length > 30_000);
+test("Personalized portrait and four original decorative renders are local transparent images", async () => {
+  for (const name of ["portrait", "orbit", "cloud", "command", "prism"]) {
+    const image = await readFile(`public/creator/${name}.png`);
+    assert.ok(image.length > 5_000);
+    assert.equal(image.subarray(1, 4).toString(), "PNG");
+    assert.ok(image.readUInt32BE(16) >= 400);
+    assert.equal(image[25], 6, "RGBA transparency is required");
+  }
 });
 test("Localized social previews are original 1200 x 630 images", async () => {
   for (const suffix of ["", "-es"]) {
-    const png = await readFile(`public/identity-preview${suffix}.png`);
+    const png = await readFile(`public/creator-preview${suffix}.png`);
     assert.equal(png.readUInt32BE(16), 1200);
     assert.equal(png.readUInt32BE(20), 630);
+  }
+});
+test("Professional focus is bilingual and the template's fictional identity and services are not published", async () => {
+  assert.equal(focusAreas.length, 5);
+  for (const area of focusAreas) {
+    assert.ok(area.title.en && area.title.es);
+    assert.ok(area.description.en && area.description.es);
+  }
+  for (const path of ["dist/index.html", "dist/es/index.html"]) {
+    const html = await readFile(path, "utf8");
+    for (const rejected of ["Nextlevel Studio", "Aura Brand Identity", "Solaris Digital", "Hi, i'm jack", "motionsites.ai/assets", "figma.site", "higgs.ai", "exosuit"]) assert.ok(!html.includes(rejected));
   }
 });
 test("Every project includes local media and localized alternative text", async () => {

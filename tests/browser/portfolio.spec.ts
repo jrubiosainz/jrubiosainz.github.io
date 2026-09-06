@@ -1,203 +1,195 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-async function scrollToProgress(page: Page, progress: number) {
-  await page.evaluate(value => scrollTo({ top: (document.documentElement.scrollHeight - innerHeight) * value, behavior: "instant" }), progress);
-  await expect.poll(async () => Number(await page.locator("#scene-stage").getAttribute("data-assembly")), { timeout: process.env.CI ? 15000 : 5000 }).toBeCloseTo(progress, 2);
+async function ready(page: Page, path = "/") {
+  await page.goto(path);
+  await expect(page.locator("html")).toHaveAttribute("data-experience", "ready");
 }
 
-test("First visit defaults to English, even in a Spanish browser", async ({ browser }) => {
-  const context = await browser.newContext({ locale: "es-ES", reducedMotion: "reduce" });
+async function place(page: Page, selector: string, viewportFraction = .15) {
+  await page.locator(selector).evaluate((element, fraction) => {
+    scrollTo({ top: element.getBoundingClientRect().top + scrollY - innerHeight * fraction, behavior: "instant" });
+  }, viewportFraction);
+  await page.waitForTimeout(100);
+}
+
+test("English is the first visit default and Jesús is the unmistakable identity", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "es-ES" });
   const page = await context.newPage();
-  await page.goto("/");
+  await ready(page);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.locator("h1")).toContainText("RUBIO SAINZ");
-  await expect(page.locator(".header-link")).toHaveAttribute("href", "https://www.linkedin.com/in/jrubiosainz/");
+  await expect(page.locator("h1")).toHaveText("HI, I'M JESÚS");
+  await expect(page.locator(".hero-identity")).toContainText("JESÚS RUBIO SAINZ");
+  await expect(page.locator(".hero-identity")).toContainText("Microsoft");
+  await expect(page.locator(".hero-portrait")).toBeVisible();
+  expect(await page.locator(".hero-portrait").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth >= 700)).toBe(true);
   await context.close();
 });
 
-test("LinkedIn is the only professional project source exposed to visitors", async ({ page }) => {
+test("Only verified LinkedIn projects are featured, without template assets or external requests", async ({ page }) => {
+  const errors: string[] = [];
+  const failures: string[] = [];
+  const external: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("response", response => { if (response.status() >= 400) failures.push(response.url()); });
+  page.on("request", request => { if (!request.url().startsWith("http://127.0.0.1:4322/")) external.push(request.url()); });
+  await ready(page);
+  for (const selector of [".about-section", ".focus-section", "#maple-leaf", "#ai-rpg", "#desktop-assistant"]) await place(page, selector);
+  await expect(page.locator(".project-card")).toHaveCount(3);
+  await expect(page.locator(".focus-item")).toHaveCount(5);
+  const destinations = await page.locator("a[href^='https:']").evaluateAll(links => links.map(link => (link as HTMLAnchorElement).href));
+  expect(destinations.every(url => ["www.linkedin.com", "es.linkedin.com"].includes(new URL(url).hostname) || url === "https://github.com/jrubiosainz")).toBe(true);
+  await expect.poll(async () => page.locator(".project-image img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
+  expect(errors).toEqual([]);
+  expect(failures).toEqual([]);
+  expect(external).toEqual([]);
+});
+
+test("Both montage rows move in opposite directions and reverse with native scroll", async ({ page }) => {
+  await ready(page);
+  await place(page, ".marquee-section", .8);
+  const transforms = async () => page.locator(".marquee-row").evaluateAll(rows => rows.map(row => new DOMMatrix(getComputedStyle(row).transform).m41));
+  const initial = await transforms();
+  await page.evaluate(() => scrollBy({ top: 350, behavior: "instant" }));
+  await expect.poll(async () => (await transforms())[0]).toBeGreaterThan(initial[0] + 20);
+  const forward = await transforms();
+  expect(forward[1]).toBeLessThan(initial[1] - 20);
+  await page.evaluate(() => scrollBy({ top: -350, behavior: "instant" }));
+  await expect.poll(async () => (await transforms())[0]).toBeCloseTo(initial[0], 1);
+  expect((await transforms())[1]).toBeCloseTo(initial[1], 1);
+});
+
+test("About text reveals progressively and is readable once, not character by character, to assistive technology", async ({ page }) => {
+  await ready(page);
+  const chars = page.locator(".reveal-char");
+  await place(page, ".about-copy", .85);
+  const initial = Number(await chars.last().evaluate(el => getComputedStyle(el).opacity));
+  await place(page, ".about-copy", -.1);
+  await expect(chars.last()).toHaveCSS("opacity", "1");
+  await place(page, ".about-copy", .85);
+  await expect.poll(async () => Number(await chars.last().evaluate(el => getComputedStyle(el).opacity))).toBeCloseTo(initial, 2);
+  await expect(page.locator(".animated-text")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator(".about-copy .sr-only")).toContainText("Cloud Solution Architect");
+});
+
+test("Desktop cards stick and scale backwards; mobile and short screens use normal flow", async ({ page }) => {
+  await ready(page);
+  const first = page.locator(".project-card").first();
+  await expect(first).toHaveCSS("position", "sticky");
+  await place(page, "#ai-rpg", .12);
+  await expect.poll(async () => Number(await first.getAttribute("data-scale"))).toBeLessThan(.97);
+  await place(page, ".project-stack", .7);
+  await expect.poll(async () => Number(await first.getAttribute("data-scale"))).toBe(1);
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await expect(first).toHaveCSS("position", "relative");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(first).toHaveCSS("position", "relative");
+});
+
+test("Magnetic portrait responds to a fine pointer and resets on exit", async ({ page }) => {
+  await ready(page);
+  await page.mouse.move(1200, 400);
+  await expect(page.locator(".portrait-magnet")).not.toHaveCSS("transform", "none");
+  await page.mouse.move(10, 995);
+  await place(page, ".about-section");
+  await page.mouse.move(700, 300);
+  await expect(page.locator(".portrait-magnet")).toHaveCSS("transform", "none");
+});
+
+test("Motion off restores complete text, static artwork and normal-flow projects and persists", async ({ page }) => {
+  await ready(page);
+  await page.locator("#motion-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
+  await expect(page.locator(".project-card").first()).toHaveCSS("position", "relative");
+  await expect(page.locator(".reveal-char").last()).toHaveCSS("opacity", "1");
+  await expect(page.locator(".hero-portrait")).toBeVisible();
+  const initial = await page.locator(".marquee-row").first().evaluate(el => getComputedStyle(el).transform);
+  await place(page, ".marquee-section", .2);
+  expect(await page.locator(".marquee-row").first().evaluate(el => getComputedStyle(el).transform)).toBe(initial);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
+  await page.locator("#motion-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "on");
+});
+
+test("OS reduced motion is respected at startup and when changed live", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
-  const externalLinks = await page.locator("a[href^='https:']").evaluateAll(links => links.map(link => link.getAttribute("href")));
-  expect(externalLinks.every(url => url && (["www.linkedin.com", "es.linkedin.com"].includes(new URL(url).hostname) || url === "https://github.com/jrubiosainz"))).toBe(true);
-  await expect(page.locator(".footer-links a[href='https://github.com/jrubiosainz']")).toBeVisible();
-  await expect(page.locator(".project, .experiment")).toHaveCount(0);
-});
-
-test("The real GLB has many independent parts and reverses reproducibly with scroll", async ({ page }) => {
-  await page.goto("/");
-  const stage = page.locator("#scene-stage");
-  await expect(stage).toHaveClass(/scene-ready/, { timeout: 20000 });
-  expect(Number(await stage.getAttribute("data-mesh-count"))).toBeGreaterThan(40);
-  await scrollToProgress(page, .05);
-  const scattered = Number(await stage.getAttribute("data-sample-x"));
-  await scrollToProgress(page, .62);
-  const assembled = Number(await stage.getAttribute("data-sample-x"));
-  expect(Math.abs(scattered - assembled)).toBeGreaterThan(.1);
-  await scrollToProgress(page, .84);
-  const layers = Number(await stage.getAttribute("data-sample-x"));
-  expect(Math.abs(layers - assembled)).toBeGreaterThan(.05);
-  await scrollToProgress(page, .05);
-  expect(Number(await stage.getAttribute("data-sample-x"))).toBeCloseTo(scattered, 2);
-  await expect(page.locator(".scene-stage")).toHaveCSS("position", "fixed");
-});
-
-test("The authorized portrait assembles from glyphs then gives way to the armor", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await scrollToProgress(page, .2);
-  expect(Number(await page.locator("#scene-stage").getAttribute("data-portrait"))).toBeGreaterThan(.8);
-  await scrollToProgress(page, .6);
-  expect(Number(await page.locator("#scene-stage").getAttribute("data-portrait"))).toBe(0);
-  await scrollToProgress(page, .2);
-  expect(Number(await page.locator("#scene-stage").getAttribute("data-portrait"))).toBeGreaterThan(.8);
-});
-
-test("Language console keeps the chapter, persists choice and respects browser history", async ({ page }) => {
+  await ready(page);
+  await expect(page.locator("#motion-toggle")).toBeDisabled();
+  await expect(page.locator(".reveal-char").last()).toHaveCSS("opacity", "1");
+  await expect(page.locator(".project-card").first()).toHaveCSS("position", "relative");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(page.locator("#motion-toggle")).toBeEnabled();
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "on");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/#systems");
-  await expect(page.locator(".chapter-nav a[href='#systems']")).toHaveClass(/active/, { timeout: 20000 });
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
+});
+
+test("Language console preserves the chapter, explicit preferences and browser back navigation", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await ready(page, "/#systems");
   await page.locator(".locale-console summary").click();
   await page.locator("[data-language=es]").click();
-  await page.waitForURL("**/es/#systems");
+  await expect(page).toHaveURL(/\/es\/#systems$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
-  await expect(page).toHaveTitle(/Más allá/);
+  await expect(page.locator("#focus-title")).toHaveText("MI ENFOQUE");
   await page.goBack();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.goto("/");
-  await page.waitForURL("**/es/");
+  await expect(page).toHaveURL(/\/es\/$/);
   await page.goto("/?lang=en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.goto("/es/#maple-leaf");
+  await page.goto("/es/#desktop-assistant");
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
 });
 
-test("Deep-linked chapters stay aligned after asynchronous 3D enhancement", async ({ page }) => {
-  await page.goto("/?lang=en#ai-rpg");
-  await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await expect(page.locator(".chapter-nav a[href='#ai-rpg']")).toHaveClass(/active/);
-  await expect(page.locator("#ai-rpg h2")).toBeInViewport();
+test("Delayed fonts do not displace a deep-linked project after enhancement", async ({ page }) => {
+  await page.route(/\.woff2$/, async route => { await new Promise(resolve => setTimeout(resolve, 250)); await route.continue(); });
+  await ready(page, "/?lang=en#ai-rpg");
+  await expect(page.locator("#ai-rpg-title")).toBeInViewport();
 });
 
-test("Scene readiness waits for font layout before exposing scroll coordinates", async ({ page }) => {
-  const fonts: Route[] = [];
-  await page.route(/\.woff2(?:\?.*)?$/, route => { fonts.push(route); });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const stage = page.locator("#scene-stage");
-  await expect(stage).toHaveAttribute("data-component-count", "81", { timeout: 20000 });
-  expect(fonts.length).toBeGreaterThan(0);
-  await expect(stage).not.toHaveClass(/scene-ready/);
-  await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto");
-  await Promise.all(fonts.map(route => route.continue()));
-  await page.unroute(/\.woff2(?:\?.*)?$/);
-  await expect(stage).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await expect(page.locator("html")).toHaveCSS("scroll-behavior", "smooth");
-  await scrollToProgress(page, .45);
-});
-
-test("Motion off restores the designed static render and persists", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await scrollToProgress(page, .45);
-  await page.locator("#motion-toggle").click();
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
-  await expect(page.locator("#scene-stage canvas")).toHaveCount(0);
-  await expect(page.locator(".static-armor")).toBeVisible();
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
-  await expect(page.locator("#scene-stage canvas")).toHaveCount(0);
-});
-
-test("OS reduced motion prevents the 3D download and responds to live changes", async ({ page }) => {
-  let modelRequests = 0;
-  page.on("request", request => { if (request.url().endsWith(".glb")) modelRequests++; });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
-  await expect(page.locator("#motion-toggle")).toBeDisabled();
-  await expect(page.locator(".static-armor")).toBeVisible();
-  expect(modelRequests).toBe(0);
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.locator("#scene-stage canvas")).toHaveCount(0);
-  await expect(page.locator(".static-armor")).toBeVisible();
-});
-
-test("No-JavaScript pages keep the complete art, content, and bilingual links", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+test("No-JavaScript pages retain all text, portrait, project links and bilingual navigation", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
-  await page.goto("/");
-  await expect(page.locator(".static-armor")).toBeVisible();
-  expect(await page.locator(".static-armor").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect(page.locator(".story-section")).toHaveCount(7);
-  await page.locator(".locale-console summary").click();
-  await page.locator("[data-language=es]").click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "es");
-  await expect(page.locator("#connect h2")).toContainText("conversación");
+  for (const path of ["/", "/es/"]) {
+    await page.goto(path);
+    await expect(page.locator(".hero-portrait")).toBeVisible();
+    await expect(page.locator(".project-card")).toHaveCount(3);
+    await expect(page.locator(".project-card").first()).toHaveCSS("position", "relative");
+    await expect(page.locator(".reveal-char").last()).toHaveCSS("opacity", "1");
+    await page.locator(".locale-console summary").click();
+    await expect(page.locator("[data-language=es]")).toBeVisible();
+  }
   await context.close();
 });
 
-test("WebGL unavailable retains a readable, fully rendered alternative", async ({ page }) => {
-  await page.addInitScript(() => {
-    const original = HTMLCanvasElement.prototype.getContext;
-    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
-      value: function(type: string, ...args: unknown[]) {
-        if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") return null;
-        return Reflect.apply(original, this, [type, ...args]);
-      },
-    });
-  });
-  await page.goto("/");
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
-  await expect(page.locator(".static-armor")).toBeVisible();
-  await expect(page.locator("#scene-stage canvas")).toHaveCount(0);
-  await expect(page.locator("#systems h2")).toContainText("Architecture");
-});
-
-test("Model failure and context loss cannot leave the visitor in an empty void", async ({ page }) => {
-  await page.route("**/models/exosuit.glb", route => route.abort());
-  await page.goto("/");
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "off");
-  await expect(page.locator(".static-armor")).toBeVisible();
-  await page.unroute("**/models/exosuit.glb");
-  await page.locator("#motion-toggle").click();
-  await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
-  await page.locator("#scene-stage canvas").evaluate(canvas => canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true })));
-  await expect(page.locator("#scene-stage canvas")).toHaveCount(0);
-  await expect(page.locator(".static-armor")).toBeVisible();
-});
-
-test("Keyboard navigation exposes a skip link and a dismissible language console", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+test("Keyboard users have a visible skip link and a dismissible locale console", async ({ page }) => {
+  await ready(page);
   await page.keyboard.press("Tab");
   await expect(page.locator(".skip-link")).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/#main$/);
+  await expect(page.locator(".skip-link")).toBeInViewport();
   await page.locator(".locale-console summary").focus();
   await page.keyboard.press("Enter");
-  await page.keyboard.press("Tab");
-  await expect(page.locator("[data-language=en]")).toBeFocused();
+  await expect(page.locator(".locale-console")).toHaveAttribute("open", "");
   await page.keyboard.press("Escape");
-  await expect(page.locator(".locale-console summary")).toBeFocused();
   await expect(page.locator(".locale-console")).not.toHaveAttribute("open");
+  await expect(page.locator(".locale-console summary")).toBeFocused();
 });
 
 for (const lang of ["en", "es"]) {
   for (const width of [360, 390, 768, 1440, 1920]) {
-    test(`${lang}: no overflow, working chapter navigation at ${width}px`, async ({ page }) => {
-      const errors: string[] = [];
-      page.on("pageerror", error => errors.push(error.message));
-      await page.setViewportSize({ width, height: width === 360 ? 640 : 1000 });
+    test(`${lang}: complete usable layout at ${width}px without horizontal overflow`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width < 400 ? 640 : 1000 });
       await page.emulateMedia({ reducedMotion: "reduce" });
-      await page.goto(lang === "es" ? "/es/" : "/");
-      await page.evaluate(() => document.fonts.ready);
-      for (const section of ["signal", "human", "systems", "maple-leaf", "ai-rpg", "desktop-assistant", "connect"]) {
-        await page.locator(`.chapter-nav a[href='#${section}']`).click();
-        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-        await expect(page.locator(`#${section} h1, #${section} h2`)).toBeVisible();
-      }
-      expect(errors).toEqual([]);
+      await ready(page, lang === "es" ? "/es/" : "/");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      const heading = await page.locator("h1").boundingBox();
+      expect(heading && heading.x >= 0 && heading.x + heading.width <= width + 1).toBeTruthy();
+      await page.locator(".site-header a[href='#projects']").click();
+      await expect(page.locator("#projects-title")).toBeInViewport();
+      await place(page, "#connect");
+      await expect(page.locator(".contact-bottom .contact-pill")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     });
   }
 }

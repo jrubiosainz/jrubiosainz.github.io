@@ -1,6 +1,6 @@
 # LinkedIn publication provenance
 
-Reviewed 6 September 2026. Professional activity and featured projects below are supported by the owner's original LinkedIn posts, not repository descriptions.
+Reviewed 7 September 2026. Professional activity and featured projects below are supported by the owner's original LinkedIn posts, not repository descriptions.
 
 ## Publication boundary
 
@@ -41,4 +41,8 @@ Visitors do not contact LinkedIn's media CDN. Images link to their original post
 
 The owner authorized use of his LinkedIn or GitHub profile photograph. This edition uses the public LinkedIn portrait associated with his original posts: [source image](https://media.licdn.com/dms/image/v2/D4E03AQGHP-c941jefA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1634768205189?e=2147483647&v=beta&t=v7XN5TiJicwOTrWhm_xnnHUb7ZG0xPxSnjGCOTssTYI), retrieved without authentication. It is stored locally in `public/portrait.jpg`; no visitor requests to LinkedIn's image CDN are required.
 
-The armor is original procedural artwork made in Blender. It is a technological silhouette metaphor, not a scan of the owner, a product he claims to have built, or a reproduction of a superhero suit. The glyph portrait is generated locally from the authorized image; no photograph is uploaded to an external generation service.
+The current portrait is an original stylized interpretation made in Blender from the authorized reference: shaved scalp, dark brows, brown eyes and close-trimmed beard. It is not a facial scan or a claim of exact reconstruction. The decorative orbit, cloud, command symbol and prism are original Blender artwork, not screenshots of the featured projects.
+
+The owner supplied a MotionSites layout brief for this edition. Only its requested design principles were adapted; no reference portrait, third-party portfolio projects, external GIFs or branded decorative assets were copied. Project panels distinguish original LinkedIn media from editorial illustrations.
+
+No photograph was uploaded to an external generation service. The requested GPT-Image-2 step could not be performed because no such image-generation connection was available; these renders were made with Blender, not GPT-Image-2.
