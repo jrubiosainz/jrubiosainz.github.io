@@ -1,8 +1,8 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 
 async function scrollToProgress(page: Page, progress: number) {
   await page.evaluate(value => scrollTo({ top: (document.documentElement.scrollHeight - innerHeight) * value, behavior: "instant" }), progress);
-  await expect.poll(async () => Number(await page.locator("#scene-stage").getAttribute("data-assembly"))).toBeCloseTo(progress, 2);
+  await expect.poll(async () => Number(await page.locator("#scene-stage").getAttribute("data-assembly")), { timeout: process.env.CI ? 15000 : 5000 }).toBeCloseTo(progress, 2);
 }
 
 test("First visit defaults to English, even in a Spanish browser", async ({ browser }) => {
@@ -77,6 +77,20 @@ test("Deep-linked chapters stay aligned after asynchronous 3D enhancement", asyn
   await expect(page.locator("#scene-stage")).toHaveClass(/scene-ready/, { timeout: 20000 });
   await expect(page.locator(".chapter-nav a[href='#ai-rpg']")).toHaveClass(/active/);
   await expect(page.locator("#ai-rpg h2")).toBeInViewport();
+});
+
+test("Scene readiness waits for font layout before exposing scroll coordinates", async ({ page }) => {
+  const fonts: Route[] = [];
+  await page.route(/\.woff2(?:\?.*)?$/, route => { fonts.push(route); });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const stage = page.locator("#scene-stage");
+  await expect(stage).toHaveAttribute("data-component-count", "81", { timeout: 20000 });
+  expect(fonts.length).toBeGreaterThan(0);
+  await expect(stage).not.toHaveClass(/scene-ready/);
+  await Promise.all(fonts.map(route => route.continue()));
+  await page.unroute(/\.woff2(?:\?.*)?$/);
+  await expect(stage).toHaveClass(/scene-ready/, { timeout: 20000 });
+  await scrollToProgress(page, .45);
 });
 
 test("Motion off restores the designed static render and persists", async ({ page }) => {

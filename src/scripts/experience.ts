@@ -143,17 +143,18 @@ async function setMotion() {
     });
     if (version !== generation) { loaded.dispose(); return; }
     scene = loaded;
-    preserveReading(() => root.classList.add("enhanced-story"));
-    stage.classList.add("scene-ready");
-    if (status) status.textContent = stage.dataset.ready ?? "";
     await document.fonts.ready;
+    if (version !== generation) { loaded.dispose(); return; }
+    preserveReading(() => root.classList.add("enhanced-story"));
     if (initialAnchor) {
       initialAnchor = false;
       if (!userInteracted) sections.find(section => `#${section.id}` === location.hash)?.scrollIntoView({ behavior: "instant" });
     }
     syncReading();
     renderedProgress = targetProgress;
-    scene.update(renderedProgress);
+    loaded.update(renderedProgress);
+    stage.classList.add("scene-ready");
+    if (status) status.textContent = stage.dataset.ready ?? "";
   } catch (error) {
     if (version !== generation) return;
     restoreStatic();
