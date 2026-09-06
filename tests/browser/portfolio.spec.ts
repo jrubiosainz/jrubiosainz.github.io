@@ -87,9 +87,11 @@ test("Scene readiness waits for font layout before exposing scroll coordinates",
   await expect(stage).toHaveAttribute("data-component-count", "81", { timeout: 20000 });
   expect(fonts.length).toBeGreaterThan(0);
   await expect(stage).not.toHaveClass(/scene-ready/);
+  await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto");
   await Promise.all(fonts.map(route => route.continue()));
   await page.unroute(/\.woff2(?:\?.*)?$/);
   await expect(stage).toHaveClass(/scene-ready/, { timeout: 20000 });
+  await expect(page.locator("html")).toHaveCSS("scroll-behavior", "smooth");
   await scrollToProgress(page, .45);
 });
 

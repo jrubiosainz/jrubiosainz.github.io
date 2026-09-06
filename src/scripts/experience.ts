@@ -153,6 +153,8 @@ async function setMotion() {
     syncReading();
     renderedProgress = targetProgress;
     loaded.update(renderedProgress);
+    // Do not animate the browser's initial fragment jump against changing geometry.
+    root.classList.add("scroll-ready");
     stage.classList.add("scene-ready");
     if (status) status.textContent = stage.dataset.ready ?? "";
   } catch (error) {
