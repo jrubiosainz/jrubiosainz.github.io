@@ -2,17 +2,25 @@
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/manrope";
 import "@fontsource/ibm-plex-mono/400.css";
-import { copy, identity, type Language } from "../content/site";
+import "../styles/void.css";
+import { copy, identity, publications, professionalNotes, type Language } from "../content/site";
 const { lang } = Astro.props as { lang: Language };
 const t = copy[lang];
 const canonical = `${identity.site}${lang === "es" ? "/es/" : "/"}`;
+const chapters = [
+  { id: "signal", title: t.opening },
+  { id: "human", title: t.person },
+  { id: "systems", title: t.practice },
+  ...publications.map(publication => ({ id: publication.id, title: publication.title[lang].replace("\n", " ") })),
+  { id: "connect", title: t.contact },
+];
 ---
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#07090d" />
+    <meta name="theme-color" content="#080a0e" />
     <title>{t.metaTitle}</title>
     <meta name="description" content={t.metaDescription} />
     <link rel="canonical" href={canonical} />
@@ -24,45 +32,107 @@ const canonical = `${identity.site}${lang === "es" ? "/es/" : "/"}`;
     <meta property="og:title" content={t.metaTitle} />
     <meta property="og:description" content={t.metaDescription} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={`${identity.site}/portrait.jpg`} />
+    <meta property="og:locale" content={lang === "es" ? "es_ES" : "en_US"} />
+    <meta property="og:image" content={`${identity.site}/identity-preview${lang === "es" ? "-es" : ""}.png`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t.metaTitle} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "Person", name: identity.name, url: identity.site, jobTitle: identity.role, worksFor: { "@type": "Organization", name: identity.organization }, sameAs: [identity.linkedin] })} />
+    <script is:inline>
+      try {
+        const url = new URL(location.href);
+        const explicit = url.searchParams.get("lang");
+        if (explicit === "en" || explicit === "es") localStorage.setItem("portfolio-language", explicit);
+        const navigation = performance.getEntriesByType("navigation")[0];
+        if (url.pathname === "/" && !explicit && navigation?.type !== "back_forward" && localStorage.getItem("portfolio-language") === "es") location.replace("/es/" + url.search + url.hash);
+        document.documentElement.dataset.motion = localStorage.getItem("portfolio-motion") === "off" || matchMedia("(prefers-reduced-motion: reduce)").matches ? "off" : "on";
+      } catch { /* Browser storage is optional; semantic links and static art remain available. */ }
+    </script>
   </head>
   <body>
-    <a class="skip" href="#main">{t.skip}</a>
-    <header><a href="#main" class="wordmark">JRS<span> / </span></a><span class="serial">HUMAN / SYSTEM — 001</span><nav aria-label={t.language}><a href="/" aria-current={lang === "en" ? "page" : undefined} lang="en">EN</a><a href="/es/" aria-current={lang === "es" ? "page" : undefined} lang="es">ES</a></nav></header>
+    <a class="skip-link" href="#main">{t.skip}</a>
+    <div class="scene-stage" id="scene-stage" role="img" aria-label={t.sceneDescription} data-loading={t.sceneLoading} data-ready={t.sceneReady} data-fallback={t.sceneFallback}>
+      <div class="stage-grid" aria-hidden="true"></div>
+      <div class="stage-aura" aria-hidden="true"></div>
+      <img class="static-armor" src="/models/exosuit-fallback.png" alt="" width="1000" height="1300" fetchpriority="high" />
+      <div class="scene-vignette" aria-hidden="true"></div>
+      <div class="coordinate coordinate-top mono" aria-hidden="true"><span>JRS—001</span><span>{t.structure}</span></div>
+      <div class="coordinate coordinate-bottom mono" aria-hidden="true"><span>θ <span id="scene-angle">−12.00</span>°</span><span id="scene-state">{t.sceneFallback}</span></div>
+      <div class="scene-cross cross-a" aria-hidden="true"></div><div class="scene-cross cross-b" aria-hidden="true"></div>
+    </div>
+    <header class="site-header">
+      <a class="wordmark" href="#signal" aria-label={t.home}>JRS<span class="wordmark-slash" aria-hidden="true">/</span></a>
+      <span class="header-caption mono">{t.edition}</span>
+      <a class="header-link" href={identity.linkedin}>LinkedIn <span aria-hidden="true">↗</span></a>
+      <div class="header-controls">
+        <button type="button" class="motion-control mono" id="motion-toggle" data-on={t.motionOn} data-off={t.motionOff} aria-label={t.motionToggle} aria-pressed="true" hidden><span class="motion-glyph" aria-hidden="true">Ⅱ</span><span class="motion-text">{t.motionOn}</span></button>
+        <details class="locale-console">
+          <summary aria-label={t.language}><span class="locale-corners" aria-hidden="true">[</span>{lang.toUpperCase()}<span class="locale-corners" aria-hidden="true">]</span></summary>
+          <div class="locale-panel"><p class="mono">{t.languageCommand}<span aria-hidden="true">_</span></p><span class="locale-hint">{t.languageHint}</span><a href="/?lang=en" lang="en" hreflang="en" data-language="en" aria-current={lang === "en" ? "page" : undefined}><span class="mono">01</span>English<span aria-hidden="true">↗</span></a><a href="/es/" lang="es" hreflang="es" data-language="es" aria-current={lang === "es" ? "page" : undefined}><span class="mono">02</span>Español<span aria-hidden="true">↗</span></a></div>
+        </details>
+      </div>
+    </header>
+    <nav class="chapter-nav" aria-label={t.nav}>
+      {chapters.map((chapter, index) => <a href={`#${chapter.id}`} aria-label={chapter.title} class:list={[index === 0 && "active"]}><span class="chapter-number mono">0{index + 1}</span><span class="chapter-track"></span><span class="chapter-name mono">{chapter.title}</span></a>)}
+    </nav>
+    <div class="assembly-meter" aria-hidden="true"><span class="mono">{t.progress}</span><span class="meter-track"><span id="meter-fill"></span></span><span class="mono" id="meter-value">000</span></div>
     <main id="main">
-      <p class="identity">{identity.name}<span>{t.role} — {t.discipline}</span></p>
-      <h1>{t.hero}</h1>
-      <p class="lead">{t.lead}</p>
-      <a class="contact" href={identity.linkedin}>{t.linkedin}<span aria-hidden="true">↗</span></a>
-      <div class="void-line" aria-hidden="true"></div>
+      <section class="story-section opening-section" id="signal" aria-labelledby="intro-title" data-layer="01">
+        <div class="opening-copy">
+          <p class="section-label mono">{t.heroIndex}</p>
+          <p class="hero-role">{t.role}<span>{t.discipline}</span></p>
+          <h1 id="intro-title"><span>{t.heroLine1}</span><span>{t.heroLine2}</span></h1>
+          <div class="hero-baseline"><p>{t.heroAside}</p><a class="scroll-instruction mono" href="#human"><span class="scroll-line" aria-hidden="true"></span>{t.enter}<span aria-hidden="true">↓</span></a></div>
+        </div>
+        <div class="intro-reference mono" aria-hidden="true"><span>{lang === "es" ? "FUENTE / LINKEDIN" : "SOURCE / LINKEDIN"}</span><span>0.000 → ∞</span></div>
+      </section>
+      <section class="story-section human-section" id="human" aria-labelledby="human-title" data-layer="02">
+        <div class="section-copy">
+          <p class="section-label mono">{t.humanIndex}</p>
+          <h2 id="human-title">{t.humanTitle}</h2>
+          <p class="section-description">{t.humanCopy}</p>
+          <figure class="portrait-reference"><img src="/portrait.jpg" alt={t.photoAlt} width="400" height="400" loading="lazy" /><figcaption class="mono">{t.portraitSource}<span>J. RUBIO SAINZ</span></figcaption></figure>
+        </div>
+        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{t.identityLabel}<br/>JRS / 001</span></div>
+      </section>
+      <section class="story-section systems-section" id="systems" aria-labelledby="systems-title" data-layer="03">
+        <div class="section-copy">
+          <p class="section-label mono">{t.practiceIndex}</p>
+          <h2 id="systems-title">{t.practiceTitle}</h2>
+          <p class="section-description">{t.practiceCopy}</p>
+          <p class="supporting-copy">{t.practiceNote}</p>
+          <a class="signal-link" href={identity.linkedin}>{t.profile}<span aria-hidden="true">↗</span></a>
+          <div class="professional-notes"><p class="mono">{t.professionalNotes}</p>{professionalNotes.map(note => <a href={note.url}><time class="mono" datetime={note.date}>{note.date.slice(0, 4)}</time><span><strong>{note.title}</strong><span>{note.description[lang]}</span></span><span aria-hidden="true">↗</span></a>)}</div>
+        </div>
+        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{t.statusLabel}<br/>AI / APPS / CLOUD</span></div>
+      </section>
+      {publications.map((publication, index) => <section class:list={["story-section", "record-section", `record-${publication.id}`]} id={publication.id} aria-labelledby={`${publication.id}-title`} data-layer={`0${index + 4}`}>
+        <div class="section-copy">
+          <p class="section-label mono">0{index + 4} — {publication.kind[lang]}</p>
+          <h2 id={`${publication.id}-title`}>{publication.title[lang]}</h2>
+          <p class="section-description">{publication.description[lang]}</p>
+          <figure class="project-media">
+            <a href={publication.url} aria-label={`${t.publicationOpen}: ${publication.title[lang].replace("\n", " ")}`}>
+              <img src={publication.image.src} width={publication.image.width} height={publication.image.height} alt={publication.image.alt[lang]} loading="lazy" decoding="async" />
+            </a>
+            <figcaption class="mono"><span>{t.mediaSource}</span><span>0{index + 1} / 03</span></figcaption>
+          </figure>
+          <div class="publication-date mono"><span>{t.published}</span><time datetime={publication.date}>{new Intl.DateTimeFormat(lang === "es" ? "es-ES" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(publication.date))}</time></div>
+          <a class="signal-link" href={publication.url}>{t.publicationOpen}<span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="layer-callout mono" aria-hidden="true"><span class="callout-line"></span><span>{lang === "es" ? "CAPA" : "LAYER"} / 0{index + 4}<br/>{publication.tools[lang]}</span></div>
+      </section>)}
+      <section class="story-section connect-section" id="connect" aria-labelledby="connect-title" data-layer="07">
+        <div class="section-copy">
+          <p class="section-label mono">{t.finalIndex}</p>
+          <h2 id="connect-title">{t.finalTitle}</h2>
+          <a class="final-link" href={identity.linkedin}>{t.finalCopy}<span aria-hidden="true">↗</span></a>
+          <a class="return-link mono" href="#signal"><span aria-hidden="true">↶</span>{t.returnTop}</a>
+        </div>
+      </section>
     </main>
-    <footer><span>© {identity.name}</span><span>{t.independent}</span><a href={identity.linkedin}>LinkedIn ↗</a></footer>
+    <footer class="site-footer"><span class="footer-name">{identity.name}</span><span class="mono">{t.independent}</span><div class="footer-links"><a href={identity.linkedin}>LinkedIn ↗</a><a href={identity.github}>GitHub ↗</a></div></footer>
+    <script src="../scripts/experience.ts"></script>
   </body>
 </html>
-<style>
-  :global(*) { box-sizing: border-box; }
-  :global(html) { background: #07090d; color: #edf0f3; }
-  :global(body) { margin: 0; font-family: "Manrope Variable", sans-serif; min-height: 100svh; }
-  :global(a) { color: inherit; text-decoration: none; }
-  :global(:focus-visible) { outline: 2px solid #a0deed; outline-offset: 6px; }
-  .skip { position: absolute; top: 0; left: 12px; transform: translateY(-150%); padding: 12px; background: #edf0f3; color: #07090d; z-index: 4; }
-  .skip:focus { transform: none; }
-  header { height: 90px; margin: 0 6%; border-bottom: 1px solid #353c44; display: flex; align-items: center; gap: 50px; }
-  .wordmark { font: 600 23px "Space Grotesk Variable", sans-serif; letter-spacing: -.05em; }
-  .wordmark span { color: #a0deed; }
-  .serial, nav, footer { font: 10px "IBM Plex Mono", monospace; letter-spacing: .07em; color: #b3bdc6; }
-  nav { margin-left: auto; display: flex; gap: 20px; }
-  nav a { min-width: 30px; padding: 12px 0; }
-  nav [aria-current] { color: #a0deed; }
-  main { padding: 90px 8% 100px; min-height: calc(100svh - 180px); overflow: hidden; position: relative; }
-  .identity { font-size: 19px; position: relative; z-index: 1; }
-  .identity span { display: block; font-size: 12px; margin-top: 12px; color: #b3bdc6; }
-  h1 { font: 500 clamp(52px, 9vw, 145px)/.96 "Space Grotesk Variable", sans-serif; letter-spacing: -.075em; white-space: pre-line; margin: 52px 0 35px; position: relative; z-index: 1; }
-  .lead { white-space: pre-line; color: #b3bdc6; font-size: 18px; line-height: 1.7; }
-  .contact { display: inline-flex; gap: 55px; align-items: center; border-bottom: 1px solid #67747e; margin-top: 30px; padding-bottom: 15px; font-size: 13px; }
-  .contact span { color: #a0deed; font-size: 22px; }
-  .void-line { position: absolute; width: 45%; height: 140%; right: -12%; top: -35%; border-left: 1px solid #52616d; transform: rotate(25deg); opacity: .3; }
-  footer { margin: 0 6%; border-top: 1px solid #353c44; min-height: 90px; display: flex; align-items: center; gap: 30px; }
-  footer a { margin-left: auto; }
-  @media(max-width:600px) { header { height:75px; gap:20px; } .serial { display:none; } main { padding:60px 7%; } .identity { font-size:17px; } .identity span { font-size:11px; line-height:1.7; max-width:280px; } h1 { font-size:12vw; } .lead { font-size:16px; } footer { flex-wrap:wrap; font-size:8px; gap:15px; padding:20px 0; } footer a { margin-left:0; } .contact { font-size:11px; gap:25px; } }
-</style>

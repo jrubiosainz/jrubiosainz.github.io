@@ -1,9 +1,0 @@
-GSAP 3.15.0
-https://gsap.com
-
-Copyright 2008-2026, GreenSock. All rights reserved.
-Subject to the terms at https://gsap.com/standard-license
-Author: Jack Doyle, jack@greensock.com
-
-This website uses GSAP and ScrollTrigger under the standard no-charge license.
-The original copyright notices are retained in the distributed JavaScript.

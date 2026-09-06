@@ -8,3 +8,5 @@ for (const [source, name] of [
 ]) {
   await copyFile(`node_modules/${source}/LICENSE`, `public/licenses/${name}-OFL.txt`);
 }
+await copyFile("node_modules/animejs/LICENSE.md", "public/licenses/Anime-js-MIT.txt");
+await copyFile("node_modules/three/LICENSE", "public/licenses/Three-js-MIT.txt");
