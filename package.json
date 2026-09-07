@@ -13,6 +13,7 @@
     "check": "astro check",
     "test": "node --experimental-strip-types --test tests/content.test.ts",
     "test:browser": "playwright test",
+    "portrait": "node scripts/build-point-portrait.mjs",
     "social": "node scripts/render-social.mjs"
   },
   "dependencies": {

@@ -25,6 +25,45 @@ test("English is the first visit default and Jesús is the unmistakable identity
   await context.close();
 });
 
+test("The point portrait retains facial contrast, separated points and a transparent backdrop", async ({ page }) => {
+  await ready(page);
+  const portrait = page.locator(".hero-portrait");
+  await expect(portrait).toHaveAttribute("src", "/creator/portrait-points.png");
+  await expect(portrait).toHaveAttribute("alt", /photograph.*silver points/);
+  const regions = await portrait.evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Portrait sampling context is unavailable.");
+    ctx.drawImage(image, 0, 0);
+    const sample = (x: number, y: number, width: number, height: number) => {
+      const { data } = ctx.getImageData(x, y, width, height);
+      let light = 0, clear = 0, ink = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        light += data[i + 1] * data[i + 3] / 255;
+        if (data[i + 3] === 0) clear++;
+        if (data[i + 3] > 128) ink++;
+      }
+      return { light: light / (width * height), clear: clear / (width * height), ink: ink / (width * height) };
+    };
+    return {
+      width: canvas.width, height: canvas.height,
+      background: sample(0, 0, 120, 350),
+      forehead: sample(400, 150, 200, 200),
+      eyes: sample(300, 480, 500, 90),
+      beard: sample(350, 880, 400, 100),
+    };
+  });
+  expect([regions.width, regions.height]).toEqual([1100, 1300]);
+  expect(regions.background.clear).toBe(1);
+  expect(regions.forehead.clear).toBeGreaterThan(.08);
+  expect(regions.forehead.ink).toBeGreaterThan(.25);
+  expect(regions.forehead.light).toBeGreaterThan(regions.eyes.light * 1.3);
+  expect(regions.forehead.light).toBeGreaterThan(regions.beard.light * 1.8);
+});
+
 test("Only verified LinkedIn projects are featured, without template assets or external requests", async ({ page }) => {
   const errors: string[] = [];
   const failures: string[] = [];
@@ -154,6 +193,8 @@ test("No-JavaScript pages retain all text, portrait, project links and bilingual
   for (const path of ["/", "/es/"]) {
     await page.goto(path);
     await expect(page.locator(".hero-portrait")).toBeVisible();
+    await expect(page.locator(".hero-portrait")).toHaveAttribute("src", "/creator/portrait-points.png");
+    await expect(page.locator(".hero-portrait")).toHaveAttribute("alt", path === "/" ? /photograph.*silver points/ : /Fotografía.*puntos plateados/);
     await expect(page.locator(".project-card")).toHaveCount(3);
     await expect(page.locator(".project-card").first()).toHaveCSS("position", "relative");
     await expect(page.locator(".reveal-char").last()).toHaveCSS("opacity", "1");

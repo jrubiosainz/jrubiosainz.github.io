@@ -1,10 +1,11 @@
-"""Build original creator portraits and studio objects with Blender's bundled Python.
+"""Build original decorative studio objects with Blender's bundled Python.
 
     blender --background --python scripts/build-portrait.py -- --preview
     blender --background --python scripts/build-portrait.py
 
-The portrait is hand-shaped procedural geometry; no generated/reference image
-textures or external models are embedded. Output paths are repository-relative.
+The optional legacy portrait is no longer used by the site. The current
+photo-based portrait is produced by build-point-portrait.mjs instead.
+Output paths are repository-relative.
 """
 
 import argparse
@@ -22,7 +23,7 @@ OUT = ROOT / "public" / "creator"
 OUT.mkdir(parents=True, exist_ok=True)
 ARGS = argparse.ArgumentParser()
 ARGS.add_argument("--preview", action="store_true")
-ARGS.add_argument("--only", choices=("portrait", "icons", "all"), default="all")
+ARGS.add_argument("--only", choices=("portrait", "icons", "all"), default="icons")
 OPTS = ARGS.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
 random.seed(8127)
 
