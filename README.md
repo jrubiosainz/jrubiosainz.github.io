@@ -2,7 +2,7 @@
 
 Personal portfolio at **https://jrubiosainz.github.io/**, with a complete Spanish edition at `/es/`.
 
-A portrait-led creative-technologist site: oversized silver Kanit typography, a personalized Blender portrait, opposing scroll-driven image bands, a progressively revealed introduction, a light professional-focus section and stacking project compositions.
+A portrait-led creative-technologist site: oversized silver Kanit typography, a photograph encoded in silver points, opposing scroll-driven image bands, a progressively revealed introduction, a light professional-focus section and stacking project compositions.
 
 ## Run and publish
 
@@ -20,7 +20,9 @@ npm run test:browser
 
 For a single engine, use `npm run test:browser -- --project=firefox` or `--project=chromium`. GitHub Actions runs both engines and deploys the static `dist/` directory from `main`. Only the deployment job has Pages write and OIDC permissions. There is no catch-all router; existing project Pages paths are not replaced.
 
-`npm run social` generates the two 1200×630 social previews from a running local server. Set `BROWSER=firefox` for Firefox or `PREVIEW_URL` for a different preview origin.
+`npm run portrait` generates `public/creator/portrait-points.png` locally from the authorized photograph using Playwright's Firefox and Canvas2D. It requires no running server. `BROWSER=chromium` selects Chromium instead.
+
+`npm run social` generates the two 1200×630 `portrait-points-preview*.png` social previews from a running local server. Set `BROWSER=firefox` for Firefox or `PREVIEW_URL` for a different preview origin.
 
 ## Editorial source boundary
 
@@ -32,7 +34,11 @@ Projects and professional activity come from the owner's original LinkedIn posts
 
 The owner's supplied MotionSites design brief informed the composition. The reference's fictional creator, commercial projects, stock head and externally hosted GIFs are not used. The bands show the owner's verified project images and clearly editorial artwork.
 
-`scripts/build-portrait.py` produces the original transparent portrait and decorative renders in `public/creator/` using Blender. The likeness is a stylized interpretation of the authorized LinkedIn photograph, not a facial scan. No photograph was uploaded to an image-generation service. **GPT-Image-2 was not available in this environment and was not used.**
+`scripts/build-point-portrait.mjs` samples the authorized `public/portrait.jpg` into a deterministic transparent point portrait. Uniform cropping preserves the photographed face's proportions; silver points encode its luminance, with the white backdrop removed and the lower edge faded. The shipped PNG is identical with and without JavaScript; Canvas2D is used only during asset generation, not by visitors.
+
+`scripts/build-portrait.py --only icons` produces the four original decorative Blender renders in `public/creator/`. These objects are unchanged. Its legacy cartoon portrait is no longer published, and decorative objects are now the script's default output.
+
+GPT-Image-2 was not used for this portrait. This is a deterministic local photograph transformation, not an AI-generated face. No photograph was uploaded to an external generation service.
 
 Astro retains complete static HTML instead of introducing a React application merely to reproduce the reference's layout. Anime.js handles the portrait's reversible scroll transformation; lightweight native scroll calculations drive the bands, type reveal, decorative objects and card scales. Kanit is self-hosted through Fontsource. There is no runtime Three.js, React, Framer Motion, Tailwind, remote font, tracking, autoplaying GIF or embedded media dependency.
 

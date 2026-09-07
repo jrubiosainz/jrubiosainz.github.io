@@ -18,7 +18,7 @@ try {
       .hero-bottom { padding-bottom:20px!important }
       .hero-statement { font-size:17px!important;max-width:220px!important }
     ` });
-    await page.screenshot({ path: `public/creator-preview${lang === "es" ? "-es" : ""}.png` });
+    await page.screenshot({ path: `public/portrait-points-preview${lang === "es" ? "-es" : ""}.png` });
     await page.close();
   }
 } finally {

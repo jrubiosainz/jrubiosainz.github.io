@@ -41,8 +41,10 @@ Visitors do not contact LinkedIn's media CDN. Images link to their original post
 
 The owner authorized use of his LinkedIn or GitHub profile photograph. This edition uses the public LinkedIn portrait associated with his original posts: [source image](https://media.licdn.com/dms/image/v2/D4E03AQGHP-c941jefA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1634768205189?e=2147483647&v=beta&t=v7XN5TiJicwOTrWhm_xnnHUb7ZG0xPxSnjGCOTssTYI), retrieved without authentication. It is stored locally in `public/portrait.jpg`; no visitor requests to LinkedIn's image CDN are required.
 
-The current portrait is an original stylized interpretation made in Blender from the authorized reference: shaved scalp, dark brows, brown eyes and close-trimmed beard. It is not a facial scan or a claim of exact reconstruction. The decorative orbit, cloud, command symbol and prism are original Blender artwork, not screenshots of the featured projects.
+The current hero portrait, `public/creator/portrait-points.png`, is a deterministic local transformation of that photograph, not a generated likeness. `scripts/build-point-portrait.mjs` samples its luminance into silver points, removes the white backdrop and fades the lower edge while preserving the actual facial proportions. It produces a transparent 1100×1300 PNG used in both languages and in the two localized social previews, including without JavaScript or with reduced motion.
+
+The decorative orbit, cloud, command symbol and prism remain original Blender artwork, not screenshots of the featured projects. The earlier cartoon head is no longer published.
 
 The owner supplied a MotionSites layout brief for this edition. Only its requested design principles were adapted; no reference portrait, third-party portfolio projects, external GIFs or branded decorative assets were copied. Project panels distinguish original LinkedIn media from editorial illustrations.
 
-No photograph was uploaded to an external generation service. The requested GPT-Image-2 step could not be performed because no such image-generation connection was available; these renders were made with Blender, not GPT-Image-2.
+No photograph was uploaded to an external generation service. GPT-Image-2 was not used; this portrait was generated locally by deterministic image sampling. The decorative objects were rendered in Blender.
