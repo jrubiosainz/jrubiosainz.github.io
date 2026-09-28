@@ -44,6 +44,13 @@ uniform vec4 uBoatGeo[3];     // track origin (x, z) and unit direction (x, z), 
 uniform vec4 uBoatSpan[3];    // sMin, sMax along the track, dir (+1 bow at sMax), visible (0/1)
 uniform vec4 uBoatLook[3];    // length, width, kind, light intensity
 uniform int uBoatCount;
+// boat lights, worked out per frame on the CPU: direction from the eye, colour (0 when hidden), and where their
+// reflection starts on the water (azimuth, elevation in radians, strength, width)
+uniform vec3 uLightDir[15];
+uniform vec3 uLightCol[15];
+uniform vec4 uReflAE[15];
+uniform vec3 uReflCol[15];
+uniform int uLightCount;
 varying vec2 vUv;
 varying vec3 vWorldPos;
 
@@ -109,14 +116,13 @@ vec3 animatedLights(vec2 uv, vec3 base) {
   float shimmer = 0.6 * sin(uTime * (0.9 + m.b * 1.7) + ph * 7.0) + 0.4 * sin(uTime * (2.3 + m.b) + ph * 13.0);
   base *= 1.0 + m.r * shimmer * 0.07;
   base += vec3(1.0, 0.70, 0.38) * m.r * m.r * 0.018 * uLightBoost;
-  // footbridge LEDs: a slow colour wave travels along the arch (pink -> violet -> soft blue), tinting their own pixels
+  // footbridge LEDs: a slow shimmer runs along the arch, warm white to cool white, on their own pixels
   if (m.g > 0.004) {
     float wv = uTime * 0.16 - uv.x * 60.0;
     float w1 = 0.5 + 0.5 * sin(wv);
     float w2 = 0.5 + 0.5 * sin(wv * 0.61 + 1.7);
-    vec3 tint = mix(vec3(1.12, 0.84, 1.02), vec3(0.84, 0.82, 1.24), w1);
-    tint = mix(tint, vec3(0.78, 0.95, 1.22), w2 * 0.35);
-    base = mix(base, base * tint * (0.9 + 0.2 * w2), clamp(m.g, 0.0, 1.0));
+    vec3 tint = mix(vec3(1.03, 1.0, 0.96), vec3(0.96, 0.99, 1.05), w1);
+    base = mix(base, base * tint * (0.93 + 0.1 * w2), clamp(m.g, 0.0, 1.0));
   }
   return base;
 }
@@ -145,44 +151,67 @@ vec3 movingTraffic(vec2 uv, vec3 col) {
   return col;
 }
 
-const float BOAT_Y0 = 0.03;
-const float BOAT_Y1 = 1.85;
-
-float band1(float x, float a, float b, float aa) {
-  return smoothstep(a - aa, a + aa, x) * (1.0 - smoothstep(b - aa, b + aa, x));
+float sdBox3(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-vec3 boatSurface(vec3 p, int face, vec4 span, vec4 look) {
+// A small boat in its own frame: x from the bow (0) back to the stern (length), y up from the waterline, z to
+// starboard. look = (length, beam, kind, lights); kind 0 an open launch, 1 a cabin cruiser, 2 a pilot boat.
+// part: 0 hull, 1 cabin, 2 mast. The window side mirrors these numbers in boatLightsFor() (JS).
+float boatSdf(vec3 p, vec4 look, out float part) {
   float len = look.x;
-  float width = look.y;
+  float hw = look.y * 0.5;
   float kind = look.z;
-  float lit = look.w;
-  float bow = span.z > 0.0 ? span.y : span.x;
-  float fromBow = abs(bow - p.x);
-  float u = clamp(fromBow / max(len, 0.1), 0.0, 1.0);
-  float aaX = max(fwidth(p.x), 0.015);
-  float aaY = max(fwidth(p.y), 0.015);
-  float aaZ = max(fwidth(p.z), 0.015);
-  vec3 hull = mix(vec3(0.020, 0.024, 0.026), vec3(0.055, 0.045, 0.034), step(1.5, kind));
-  vec3 deck = vec3(0.36, 0.33, 0.27) * 0.12;
-  vec3 col = hull * (0.75 + uLightning * 2.2);
-  float cabinX = band1(u, 0.34, 0.68, aaX / len);
-  float cabinY = band1(p.y, 0.72, 1.45, aaY);
-  float cabinZ = band1(abs(p.z), 0.0, width * 0.30, aaZ);
-  float cabin = cabinX * cabinY * cabinZ;
-  float win = cabin * band1(p.y, 0.88, 1.28, aaY) * (0.35 + 0.65 * band1(fract(u * 5.0), 0.12, 0.78, aaX / len * 4.0));
-  col = mix(col, deck, cabin * 0.52);
-  col += vec3(1.0, 0.72, 0.34) * win * lit * 1.9;
-  float rail = band1(p.y, 0.42, 0.52, aaY) * (1.0 - cabin * 0.5);
-  col += vec3(0.42, 0.38, 0.30) * rail * 0.20;
-  float waterline = band1(p.y, 0.12, 0.22, aaY);
-  col += vec3(0.62, 0.68, 0.64) * waterline * 0.16;
-  if (face == 0) {
-    bool isBow = abs(p.x - bow) < 0.42;
-    float side = smoothstep(0.18, width * 0.48, abs(p.z));
-    float nav = band1(p.y, 0.48, 0.72, aaY) * side;
-    vec3 navCol = p.z < 0.0 ? vec3(1.0, 0.05, 0.025) : vec3(0.06, 1.0, 0.18);
-    col += (isBow ? navCol * 2.8 : vec3(1.0, 0.92, 0.76) * 1.1) * nav * lit;
+  float rake = 0.38 * max(p.y, 0.0);                       // the stem leans forward
+  float u = clamp((p.x + rake) / (len * 0.36), 0.0, 1.0);
+  float fb = mix(1.3, 0.85, u);                            // the sheer rises towards the bow
+  float halfW = hw * sqrt(u) * (0.86 + 0.14 * clamp(p.y / fb, 0.0, 1.0));   // pointed bow, flared topsides
+  float hull = max(max((abs(p.z) - halfW) * 0.7, max((-p.x - rake) * 0.93, p.x - len)), max(p.y - fb, -p.y - 0.3));
+  float c0 = len * (kind > 1.5 ? 0.40 : (kind > 0.5 ? 0.28 : 0.42));
+  float c1 = len * (kind > 1.5 ? 0.74 : (kind > 0.5 ? 0.72 : 0.66));
+  float ch = kind > 0.5 ? 1.45 : 1.0;
+  float cabin = sdBox3(p - vec3((c0 + c1) * 0.5, 0.85 + ch * 0.5, 0.0), vec3((c1 - c0) * 0.5, ch * 0.5, hw * 0.64));
+  float mast = max(length(p.xz - vec2(c0 + 0.45, 0.0)) - 0.05, abs(p.y - (0.85 + ch + 0.55)) - 0.55);
+  float d = min(hull, min(cabin, mast));
+  part = d == cabin ? 1.0 : (d == mast ? 2.0 : 0.0);
+  return d;
+}
+
+vec3 boatNormal(vec3 p, vec4 look) {
+  float q;
+  const vec2 e = vec2(0.03, 0.0);
+  return normalize(vec3(boatSdf(p + e.xyy, look, q) - boatSdf(p - e.xyy, look, q),
+                        boatSdf(p + e.yxy, look, q) - boatSdf(p - e.yxy, look, q),
+                        boatSdf(p + e.yyx, look, q) - boatSdf(p - e.yyx, look, q)));
+}
+
+// night light on a hull: the city's warm glow from above, a lamp on the bank, a wet sheen at grazing angles
+vec3 boatShade(vec3 p, vec3 nrm, float part, vec4 look, vec3 view) {
+  float kind = look.z;
+  float ch = kind > 0.5 ? 1.45 : 1.0;
+  vec3 hullCol = kind > 1.5 ? vec3(0.09, 0.07, 0.06) : (kind > 0.5 ? vec3(0.62, 0.62, 0.6) : vec3(0.07, 0.09, 0.12));
+  vec3 alb = part > 0.5 ? (kind > 1.5 ? vec3(0.55, 0.3, 0.12) : vec3(0.66, 0.65, 0.62)) : hullCol;
+  if (part < 0.5 && nrm.y > 0.6) alb = vec3(0.16, 0.14, 0.12);
+  if (part > 1.5) alb = vec3(0.2);
+  if (part < 0.5 && abs(nrm.y) < 0.6) {                   // topsides: a pale rub rail and waterline stripe
+    float fb = mix(1.3, 0.85, clamp((p.x + 0.38 * max(p.y, 0.0)) / (look.x * 0.36), 0.0, 1.0));
+    float rail = smoothstep(fb - 0.16, fb - 0.12, p.y) * (1.0 - smoothstep(fb - 0.05, fb - 0.02, p.y));
+    float boot = smoothstep(0.04, 0.07, p.y) * (1.0 - smoothstep(0.13, 0.16, p.y));
+    alb = mix(alb, vec3(0.72, 0.7, 0.66), max(rail, boot * 0.8));
+  }
+  float amb = 0.012 * (0.55 + 0.45 * nrm.y);
+  float key = 0.022 * max(dot(nrm, normalize(vec3(-0.35, 0.75, 0.45))), 0.0);
+  vec3 col = alb * (amb + key) * vec3(1.0, 0.74, 0.52);
+  col += vec3(1.0, 0.7, 0.45) * pow(1.0 - abs(dot(nrm, -view)), 4.0) * 0.012;
+  col *= mix(0.55, 1.0, smoothstep(0.02, 0.25, p.y));
+  if (part > 0.5 && part < 1.5 && abs(nrm.y) < 0.5) {    // cabin windows, lit from inside
+    float y0 = 0.85 + ch * 0.42;
+    float y1 = 0.85 + ch * 0.8;
+    float band = smoothstep(y0, y0 + 0.04, p.y) * (1.0 - smoothstep(y1 - 0.04, y1, p.y));
+    float along = abs(nrm.z) > abs(nrm.x) ? p.x : p.z * 2.0;
+    float f = fract(along / 0.8);
+    col += vec3(1.0, 0.72, 0.4) * band * smoothstep(0.08, 0.14, f) * (1.0 - smoothstep(0.84, 0.9, f)) * 0.26 * look.w;
   }
   return col;
 }
@@ -202,94 +231,125 @@ vec3 waterShimmer(vec2 uv, vec3 col) {
   return col;
 }
 
-vec4 riverTraffic(vec3 d, vec3 bg, inout vec3 glow) {
+// Boats: ray-marched hulls, opaque and hidden where the footbridge stands between us and the water under them; a
+// faint wake; their navigation lights (points with a rainy halo) and the lights' long broken reflections.
+vec4 riverTraffic(vec3 d, vec3 haze, float pixA, float waterHere, inout vec3 glow, inout vec3 onWater) {
   vec4 hit = vec4(0.0);
   float best = 1e9;
-  vec3 O = vec3(0.0, uRiverH, 0.0);
   float tg = d.y < -1e-4 ? uRiverH / -d.y : -1.0;
-  vec3 g = O + d * max(tg, 0.0);
-  float waterHere = tg > 0.0 ? texture2D(uWater, clamp(panoUvFromDir(d), 0.001, 0.999)).r : 0.0;
+  vec2 gxz = d.xz * max(tg, 0.0);                          // where this pixel's ray meets the water
   for (int i = 0; i < 3; i++) {
     if (i >= uBoatCount) break;
     vec4 span = uBoatSpan[i];
     if (span.w < 0.5) continue;
     vec4 geo = uBoatGeo[i];
     vec4 look = uBoatLook[i];
+    float dir = span.z;
     vec2 u = geo.zw;
     vec2 n = vec2(-u.y, u.x);
-    float bw = max(look.y, 0.8);
-    vec2 rel = O.xz - geo.xy;
-    vec3 o = vec3(dot(rel, u), O.y, dot(rel, n));
-    vec3 dl = vec3(dot(d.xz, u), d.y, dot(d.xz, n));
-    vec3 dd = mix(dl, vec3(1e-6), step(abs(dl), vec3(1e-6)));
+    float bow = dir > 0.0 ? span.y : span.x;
+    float len = look.x;
+    float hw = look.y * 0.5;
+    // the eye and this pixel's ray in the boat's frame
+    vec3 ob = vec3(dir * (bow + dot(geo.xy, u)), uRiverH, -dir * dot(geo.xy, n));
+    vec3 db = vec3(-dir * dot(d.xz, u), d.y, dir * dot(d.xz, n));
+    vec3 dd = mix(db, vec3(1e-6), step(abs(db), vec3(1e-6)));
     vec3 inv = 1.0 / dd;
-    vec3 t0 = (vec3(span.x, BOAT_Y0, -bw * 0.5) - o) * inv;
-    vec3 t1 = (vec3(span.y, BOAT_Y1, bw * 0.5) - o) * inv;
-    vec3 tmin = min(t0, t1);
-    vec3 tmax = max(t0, t1);
-    float tn = max(max(tmin.x, tmin.y), tmin.z);
-    float tf = min(min(tmax.x, tmax.y), tmax.z);
-    float bow = span.z > 0.0 ? span.y : span.x;
-    if (tn < tf && tn > 0.0 && tn < best) {
-      vec3 p = o + dl * tn;
-      vec2 wxz = geo.xy + u * p.x + n * p.z;
-      vec3 waterDir = normalize(vec3(wxz.x, -uRiverH, wxz.y));
-      float wm = waterAtDir(waterDir);
-      if (wm > 0.22) {
-        int face = tn == tmin.y ? 1 : (tn == tmin.x ? 0 : 2);
-        vec3 col = boatSurface(p, face, span, look);
-        float distFade = exp(-tn / 420.0) * (1.0 - smoothstep(520.0, 760.0, tn));
-        best = tn;
-        hit = vec4(mix(bg, col, distFade), smoothstep(0.18, 0.42, wm) * distFade);
+    vec3 t0 = (vec3(-0.05, -0.3, -hw - 0.05) - ob) * inv;
+    vec3 t1 = (vec3(len + 0.05, 3.6, hw + 0.05) - ob) * inv;
+    vec3 tmn = min(t0, t1);
+    vec3 tmx = max(t0, t1);
+    float tn = max(max(tmn.x, tmn.y), tmn.z);
+    float tf = min(min(tmx.x, tmx.y), tmx.z);
+    if (tn < tf && tf > 0.0 && tn < best) {
+      float t = max(tn, 0.0);
+      float closest = 1e9;
+      float tc = t;
+      float part = 0.0;
+      bool found = false;
+      for (int k = 0; k < 40; k++) {
+        float pr;
+        float ds = boatSdf(ob + db * t, look, pr);
+        float eps = t * pixA;
+        if (ds / eps < closest) { closest = ds / eps; tc = t; part = pr; }
+        if (ds < eps * 0.35) { found = true; break; }
+        t += max(ds * 0.75, eps * 0.4);
+        if (t > tf) break;
+      }
+      float cover = found ? 1.0 : 1.0 - smoothstep(0.0, 1.0, closest);    // anti-aliased silhouette
+      if (cover > 0.001) {
+        vec3 p = ob + db * tc;
+        vec2 wxz = geo.xy + u * (bow - dir * p.x) + n * (dir * p.z);
+        float wm = texture2D(uWater, clamp(panoUvFromDir(normalize(vec3(wxz.x, -uRiverH, wxz.y))), 0.001, 0.999)).r;
+        cover *= smoothstep(0.25, 0.55, wm);
+        if (cover > 0.001) {
+          vec3 col = boatShade(p, boatNormal(p, look), part, look, normalize(db));
+          best = tn;
+          hit = vec4(mix(col, haze, 1.0 - exp(-tc / 420.0)), cover);
+        }
       }
     }
-    if (tg > 0.0 && tg < best && waterHere > 0.15) {
-      vec2 gr = g.xz - geo.xy;
-      float sg = dot(gr, u);
-      float cg = dot(gr, n);
-      float ds = max(max(span.x - sg, sg - span.y), 0.0);
-      float dc = max(abs(cg) - bw * 0.5, 0.0);
-      float wakeBehind = max(0.0, (bow - sg) * span.z);
-      float wake = exp(-abs(cg) / (0.55 + wakeBehind * 0.018)) * exp(-wakeBehind / 34.0) * step(0.0, wakeBehind) * smoothstep(28.0, 4.0, wakeBehind);
-      float pool = exp(-(ds * ds + dc * dc) / 5.5) * step(ds + dc, 9.0);
-      float streak = exp(-abs(cg) / 0.7) * exp(-ds / 5.0) * step(ds, 8.0);
-      vec3 add = vec3(1.0, 0.72, 0.38) * pool * 0.055 + vec3(0.68, 0.78, 0.88) * wake * 0.035 + vec3(0.8, 0.5, 1.0) * streak * 0.020;
-      glow += add * look.w * waterHere * exp(-tg / 420.0);
+    // wake: two thin arms opening at about 19.5 degrees from the bow, and a wash behind the stern
+    if (waterHere > 0.15 && tg > 0.0) {
+      vec2 r = gxz - geo.xy;
+      float bx = dir * (bow - dot(r, u));
+      float bz = dir * dot(r, n);
+      if (bx > 0.0 && bx < 90.0) {
+        float arm = (abs(bz) - bx * 0.354) / (0.2 + bx * 0.03);
+        float wash = bx > len ? exp(-bz * bz / (hw * hw * 0.8)) * exp(-(bx - len) / 9.0) : 0.0;
+        float wake = (exp(-arm * arm) * exp(-bx / 32.0) * 0.6 + wash) * look.w;
+        onWater += vec3(0.62, 0.62, 0.6) * wake * 0.01 * waterHere * exp(-tg / 500.0);
+      }
     }
-    for (int k = 0; k < 4; k++) {
-      float endS = k == 3 ? (span.z > 0.0 ? span.x : span.y) : bow;
-      float side = k == 0 ? -bw * 0.34 : (k == 1 ? bw * 0.34 : 0.0);
-      vec3 lcol = k == 0 ? vec3(1.0, 0.05, 0.025) : (k == 1 ? vec3(0.05, 1.0, 0.18) : vec3(1.0, 0.88, 0.68));
-      float ly = k == 2 ? 1.75 : (k == 3 ? 0.82 : 0.62);
-      vec2 xz = geo.xy + u * endS + n * side;
-      vec3 L = vec3(xz.x, ly - uRiverH, xz.y);
-      float dist = length(L);
-      vec3 Ld = L / dist;
-      float a = sqrt(max(0.0, 2.0 - 2.0 * dot(d, Ld)));
-      float core = exp(-pow(a / 0.0020, 2.0)) * 0.8 + exp(-pow(a / 0.010, 2.0)) * 0.08;
-      glow += lcol * core * look.w * exp(-dist / 520.0);
+  }
+  vec2 ae = vec2(atan(d.x, -d.z), asin(clamp(d.y, -1.0, 1.0)));
+  float sc = max(pixA * 0.85, 0.00025);
+  for (int k = 0; k < 15; k++) {
+    if (k >= uLightCount) break;
+    vec3 lc = uLightCol[k];
+    if (lc.r + lc.g + lc.b > 0.0) {
+      float a = sqrt(max(0.0, 2.0 - 2.0 * dot(d, uLightDir[k])));
+      glow += lc * (exp(-pow(a / sc, 2.0)) * 1.4 + exp(-pow(a / 0.0035, 2.0)) * 0.09 + exp(-pow(a / 0.012, 2.0)) * 0.015);
+    }
+    vec4 rf = uReflAE[k];
+    if (rf.z > 0.0 && waterHere > 0.05) {
+      float da = ae.x - rf.x;
+      da -= 6.2831853 * floor((da + 3.1415927) / 6.2831853);
+      float de = ae.y - rf.y;
+      float along = de < 0.0 ? exp(de / 0.03) : exp(-pow(de / 0.003, 2.0));
+      // broken by the ripples: uneven dashes, each nudged sideways, flickering as the water moves
+      float band = ae.y * 900.0 + uTime * 1.3;
+      float bi = floor(band);
+      float rr = hash12(vec2(bi, float(k) * 7.3));
+      float ripple = 0.2 + 0.8 * rr * rr * smoothstep(0.0, 0.3, fract(band)) * smoothstep(1.0, 0.7, fract(band));
+      float wa = da / rf.w + (hash12(vec2(bi, float(k) + 3.1)) - 0.5) * 1.6;
+      onWater += uReflCol[k] * rf.z * exp(-wa * wa) * along * ripple * waterHere;
     }
   }
   return hit;
 }
 
-vec4 beadLayer(vec2 uv, vec2 meters, vec2 cellMm, float scale, vec2 panoUv, vec3 city, inout vec2 refractOffset) {
+// Glass coordinates are metres on the pane, x to the right and y UP (vUv runs top to bottom on this plane).
+// Small beads: every cell may hold one. Now and then one lands (it grows in a blink), sits, and is carried away,
+// and the runners sweep them off their path (wipe).
+vec4 beadLayer(vec2 meters, vec2 cellMm, float scale, float seed, vec2 panoUv, vec3 city, float wipe, inout vec2 refractOffset) {
   vec2 grid = meters / (cellMm * 0.001);
   vec2 id = floor(grid);
   vec2 f = fract(grid) - 0.5;
-  vec2 jitter = hash22(id) - 0.5;
-  vec2 c = jitter * 0.48;
-  float rnd = hash12(id + 3.7);
-  float radius = mix(0.11, 0.30, rnd) * scale;
+  float lt = uTime * (0.012 + 0.03 * hash12(id + 11.3 + seed)) + hash12(id + 5.1 + seed);
+  float gen = floor(lt);                                  // every landing in a new spot, with a new size
+  float life = fract(lt);
+  vec2 c = (hash22(id + seed + gen * 1.37) - 0.5) * 0.48;
+  float rnd = hash12(id + 3.7 + seed + gen * 2.11);
+  float landed = smoothstep(0.0, 0.006, life) * (1.0 - smoothstep(0.9, 0.915, life));
+  float radius = mix(0.11, 0.30, rnd) * scale * (0.6 + 0.4 * smoothstep(0.0, 0.02, life));
   float m = softCircle(f - c, radius, 0.035);
-  float keep = step(0.68, rnd) * smoothstep(0.08, 0.70, uRain);
-  m *= keep;
+  m *= step(0.55, rnd) * landed * smoothstep(0.08, 0.70, uRain) * (1.0 - wipe);
   vec2 n = normalize(f - c + 1e-4);
-  float lens = m * (0.0020 + 0.0032 * rnd) * uRain;
-  refractOffset += n * lens;
+  refractOffset += n * m * (0.0020 + 0.0032 * rnd) * uRain;
   float rim = smoothstep(radius * 0.45, radius, length(f - c)) * m;
-  // a bead is a tiny fisheye lens: a wide, upside-down and mirrored view of the city, lights in focus,
-  // with a dark rim where the light is reflected back inside the water
+  // a bead is a tiny fisheye lens: a wide, upside-down view of the city, lights in focus, and a dark rim where the
+  // light is reflected back inside the water
   vec2 q = (f - c) / max(radius, 1e-4);
   vec2 suv = panoUv - q * vec2(0.075, 0.13) * (0.7 + 0.3 * rnd);
   vec3 drop = mix(sampleBlur(suv).rgb, sampleCity(suv), 0.55) * (0.95 + rnd * 0.2);
@@ -297,58 +357,112 @@ vec4 beadLayer(vec2 uv, vec2 meters, vec2 cellMm, float scale, vec2 panoUv, vec3
   float glint = pow(max(0.0, 1.0 - length(q - vec2(-0.38, 0.42)) * 2.2), 5.0) * m;
   // the brighter sky above lands, upside down, in the lower part of each bead
   vec3 sky = sampleBlur(vec2(panoUv.x - q.x * 0.05, 0.63)).rgb;
-  float crescent = smoothstep(0.1, 0.85, -q.y) * (1.0 - smoothstep(0.78, 1.0, length(q)));
-  drop += sky * crescent * 0.9;
+  drop += sky * smoothstep(0.1, 0.85, -q.y) * (1.0 - smoothstep(0.78, 1.0, length(q))) * 0.9;
   drop += vec3(1.0, 0.78, 0.5) * (glint * 0.5 + smoothstep(0.45, 1.0, lightCatch) * m * 0.12);
   drop *= 1.0 - rim * 0.5;
   return vec4(mix(city, drop, m * 0.86), m * 0.55);
 }
 
-float runDrop(vec2 uv, vec2 meters, float column, float speed, float phase, out vec2 offset) {
-  float x = column + sin(uTime * 0.13 + phase * 6.0) * 0.016;
-  float cycle = fract(uTime * speed + phase);
-  float stick = smoothstep(0.08, 0.55, cycle) * (1.0 - smoothstep(0.82, 1.0, cycle));
-  float y = 1.08 - cycle * 1.48 + sin(cycle * PI * 8.0 + phase) * 0.012 * stick;
-  vec2 p = vec2(x, y);
-  vec2 q = meters - p;
-  float head = exp(-dot(q / vec2(0.0055, 0.012), q / vec2(0.0055, 0.012)));
-  float trail = smoothstep(0.020, 0.0, abs(q.x + sin(q.y * 38.0 + phase) * 0.0018)) *
-                smoothstep(0.0, 0.06, q.y) * smoothstep(0.42, 0.0, q.y);
-  offset = vec2(q.x * -0.020, -0.009) * (head + trail * 0.45);
-  return (head + trail * 0.38) * smoothstep(0.35, 0.95, uRain);
+float runnerPath(float y, float x0, float g1, float g2) {
+  return x0 + 0.004 * sin(y * 11.0 + g1 * 6.2832) + 0.0025 * sin(y * 29.0 + g2 * 6.2832);
 }
 
-vec3 rainOnGlass(vec2 uv, vec2 panoUv, vec3 city) {
-  vec2 meters = uv * uOpeningMeters;
+// Runners: a drop grows heavy where it formed, then slips down the pane in jerks, wandering a few millimetres from
+// side to side, and leaves a thin wet trail with a few beads in it. One per column at a time; many columns stay dry.
+// Returns the drop's colour (a tiny lens: a wide, upside-down view of what is behind it) and its coverage.
+vec4 runner(vec2 m, float colW, float seed, vec2 panoUv, inout float wipe) {
+  float cid = floor(m.x / colW);
+  if (hash12(vec2(cid, seed)) > 0.75 * smoothstep(0.35, 1.2, uRain)) return vec4(0.0);
+  float period = mix(18.0, 40.0, hash12(vec2(cid, seed + 4.3)));
+  float T = uTime / period + hash12(vec2(cid, seed + 9.1));
+  float gen = floor(T);
+  float g1 = hash12(vec2(cid, gen + seed));
+  float g2 = hash12(vec2(cid + 7.0, gen + seed));
+  float k = clamp(fract(T) / mix(0.6, 0.85, g1), 0.0, 1.0);      // then the column rests until the next one
+  float fadeOut = 1.0 - smoothstep(0.86, 1.0, fract(T));         // its trail dries before a new drop starts
+  float grow = smoothstep(0.0, 0.12, k);                         // it swells in place before it lets go
+  float kk = clamp((k - 0.12) / 0.88, 0.0, 1.0);
+  float nSteps = 8.0;
+  float si = floor(kk * nSteps);
+  float hold = mix(0.1, 0.5, hash12(vec2(si + gen * 13.0, cid + seed)));
+  float s = kk >= 1.0 ? 1.0 : (si + smoothstep(hold, 1.0, fract(kk * nSteps))) / nSteps;
+  float yStart = uOpeningMeters.y * mix(0.45, 1.0, g1);
+  float yHead = mix(yStart, -0.06, s);
+  float x0 = (cid + 0.5 + (g2 - 0.5) * 0.4) * colW;
+  float r = mix(0.004, 0.0065, g2) * mix(0.45, 1.0, grow);
+  vec2 q = m - vec2(runnerPath(yHead, x0, g1, g2), yHead);
+  vec2 e = q / vec2(r, r * (q.y > 0.0 ? 1.3 : 0.95));            // a round front, a short tail above
+  float head = smoothstep(1.0, 0.8, length(e)) * (1.0 - step(1.0, kk));
+  float up = m.y - yHead;
+  float trailLen = min(yStart - yHead, 0.35);
+  float dx = m.x - runnerPath(m.y, x0, g1, g2);
+  float wT = r * mix(0.45, 0.1, clamp(up / max(trailLen, 1e-3), 0.0, 1.0));
+  float trail = smoothstep(wT, wT * 0.25, abs(dx)) * step(0.0, up) * (1.0 - smoothstep(trailLen * 0.4, trailLen, up)) * fadeOut;
+  float sp = 0.018;                                              // beads left behind in the trail
+  float bi = floor(m.y / sp);
+  float bh = hash12(vec2(bi, cid + gen * 3.1 + seed));
+  float by = (bi + 0.5) * sp;
+  vec2 bc = vec2(runnerPath(by, x0, g1, g2) + (bh - 0.5) * 0.0015, by);
+  float br = r * mix(0.25, 0.45, bh) * step(0.35, bh);
+  vec2 bq = (m - bc) / max(br, 1e-5);
+  float bead = smoothstep(1.0, 0.6, length(bq)) * step(yHead + r * 2.0, by) * step(by, yHead + trailLen) * fadeOut;
+  wipe = max(wipe, smoothstep(r * 1.6, r * 0.8, abs(dx)) * step(0.0, up + r) * (1.0 - smoothstep(trailLen * 0.6, trailLen * 1.3, up)) * fadeOut);
+  float cover = max(max(head, trail * 0.6), bead * 0.85);
+  if (cover <= 0.0) return vec4(0.0);
+  if (head <= 0.0 && bead <= 0.0) {
+    // the wet trail: a thin water lens that bends the lights behind it sideways, dark at its edges
+    float tx = dx / max(wT, 1e-5);
+    vec3 c = sampleCity(panoUv + vec2(-tx * 0.006, 0.0)) * (1.0 + 0.5 * (1.0 - tx * tx)) * (0.7 + 0.3 * (1.0 - abs(tx)));
+    c += vec3(1.0, 0.82, 0.6) * 0.012 * (1.0 - tx * tx);                 // the wet line catches the room's light
+    return vec4(c, cover);
+  }
+  vec2 lq = head > 0.0 ? e : bq;
+  float lens = head > 0.0 ? 1.0 : 0.6;
+  float L = length(lq);
+  // a drop is a tiny fisheye: a wide, upside-down view of what is behind it, the lights sharp and concentrated
+  vec2 suv = panoUv - lq * vec2(0.16, 0.24) * lens;
+  vec3 c = mix(sampleBlur(suv), sampleCity(suv), 0.8) * 1.5;
+  // the glowing sky lands, upside down, in its lower half, brightest just inside the lower edge
+  float lowRim = smoothstep(0.15, 0.9, -lq.y) * smoothstep(1.0, 0.72, L);
+  c += sampleBlur(vec2(panoUv.x - lq.x * 0.04, 0.6)) * lowRim * 1.4 * lens;
+  // light bent away from the viewer at its edges: a dark outline
+  c *= 1.0 - smoothstep(0.62, 0.98, L) * 0.75;
+  // and the room's lamp caught near its top, a soft spot with a hard core
+  vec2 gq = lq - vec2(-0.32, 0.42);
+  c += vec3(1.0, 0.82, 0.58) * (exp(-dot(gq, gq) * 40.0) * 1.6 + exp(-dot(gq, gq) * 7.0) * 0.12) * lens;
+  return vec4(c, cover);
+}
+
+vec3 rainOnGlass(vec2 glass, vec2 panoUv, vec3 city) {
+  vec2 m = glass * uOpeningMeters;
   vec2 off = vec2(0.0);
-  vec4 b0 = beadLayer(uv, meters, vec2(16.0, 14.0), 1.0, panoUv, city, off);
-  vec4 b1 = beadLayer(uv + vec2(0.13, 0.07), meters + vec2(0.017, 0.0), vec2(8.5, 10.5), 0.72, panoUv, b0.rgb, off);
-  vec4 b2 = vec4(b1.rgb, b1.a);
-  if (uQuality > 0.5) {
-    b2 = beadLayer(uv + vec2(0.41, 0.29), meters + vec2(0.0, 0.023), vec2(5.5, 6.2), 0.48, panoUv, b1.rgb, off);
-  }
+  float wipe = 0.0;
+  vec4 r0 = runner(m, 0.075, 1.0, panoUv, wipe);
+  vec4 r1 = runner(m + vec2(0.031, 0.0), 0.11, 7.0, panoUv, wipe);
+  vec4 r2 = vec4(0.0);
+  if (uQuality > 0.5) r2 = runner(m + vec2(0.052, 0.0), 0.16, 13.0, panoUv, wipe);
+  vec4 b0 = beadLayer(m, vec2(16.0, 14.0), 1.0, 0.0, panoUv, city, wipe, off);
+  vec4 b1 = beadLayer(m + vec2(0.017, 0.0), vec2(8.5, 10.5), 0.72, 17.0, panoUv, b0.rgb, wipe, off);
+  vec4 b2 = b1;
+  if (uQuality > 0.5) b2 = beadLayer(m + vec2(0.0, 0.023), vec2(5.5, 6.2), 0.48, 31.0, panoUv, b1.rgb, wipe, off);
   vec3 col = b2.rgb;
-  float total = b0.a + b1.a + b2.a;
-  for (int i = 0; i < 7; i++) {
-    float fi = float(i);
-    float column = hash12(vec2(fi, 7.1)) * uOpeningMeters.x;
-    vec2 ro;
-    float m = runDrop(uv, meters, column, mix(0.020, 0.052, hash12(vec2(fi, 3.1))), hash12(vec2(fi, 9.4)), ro);
-    vec3 rcol = sampleBlur(panoUv + ro * vec2(0.7, -0.9)).rgb * 0.9;
-    rcol += vec3(1.0, 0.70, 0.35) * pow(m, 5.0) * 0.45;
-    col = mix(col, rcol, clamp(m, 0.0, 0.88));
-    off += ro * m;
-    total += m;
-  }
-  float mist = 0.045 * smoothstep(0.05, 1.0, uRain);
-  col = mix(col, sampleBlur(panoUv), mist);
-  // Outside rain streaks, only visible against light.
-  vec2 su = uv * vec2(72.0, 28.0) + vec2(uTime * -0.8, uTime * 5.0);
+  col = mix(col, r0.rgb, clamp(r0.a, 0.0, 0.95));
+  col = mix(col, r1.rgb, clamp(r1.a, 0.0, 0.95));
+  col = mix(col, r2.rgb, clamp(r2.a, 0.0, 0.95));
+  vec3 wet = mix(city, col, clamp(b0.a + b1.a + b2.a + r0.a + r1.a + r2.a, 0.0, 0.92));
+  // a faint film of water on the pane, clearer where the drops have run
+  wet = mix(wet, sampleBlur(panoUv), 0.05 * smoothstep(0.05, 1.0, uRain) * (1.0 - wipe * 0.8));
+  // rain falling outside, caught by the light: fine streaks going down, slanted a little by the wind
+  vec2 su = glass * vec2(90.0, 30.0);
+  su.x -= uTime * 3.8;                                   // drifting right while falling: about 8 degrees
+  su.y += uTime * 9.0;
   vec2 sid = floor(su);
   vec2 sf = fract(su);
-  float sr = step(0.982, hash12(sid)) * smoothstep(0.014, 0.0, abs(sf.x - 0.5)) * smoothstep(0.0, 0.62, sf.y) * smoothstep(1.0, 0.62, sf.y);
-  col += vec3(0.26, 0.33, 0.43) * sr * smoothstep(0.45, 1.6, uRain);
-  return mix(city, col, clamp(total, 0.0, 0.92));
+  float lineX = 0.5 + (0.5 - sf.y) * 0.45;
+  float sr = step(0.982, hash12(sid)) * smoothstep(0.05, 0.0, abs(sf.x - lineX)) * smoothstep(0.0, 0.5, sf.y) * smoothstep(1.0, 0.5, sf.y);
+  float lit = dot(city, vec3(0.3, 0.5, 0.2));
+  wet += vec3(0.8, 0.86, 0.95) * sr * (0.012 + lit * 0.9) * smoothstep(0.45, 1.6, uRain);
+  return wet;
 }
 
 void main() {
@@ -359,10 +473,13 @@ void main() {
   city = animatedLights(panoUv, city);
   city = movingTraffic(panoUv, city);
   city = waterShimmer(panoUv, city);
+  float pixA = max(length(fwidth(dirScene)), 1e-5);
+  float waterHere = dirScene.y < -1e-4 ? texture2D(uWater, clamp(panoUv, 0.001, 0.999)).r : 0.0;
   vec3 glare = vec3(0.0);
-  vec4 boat = riverTraffic(dirScene, city, glare);
-  city = mix(city, boat.rgb, boat.a) + glare;
-  vec3 wet = rainOnGlass(vUv, panoUv, city);
+  vec3 onWater = vec3(0.0);
+  vec4 boat = riverTraffic(dirScene, sampleBlur(panoUv), pixA, waterHere, glare, onWater);
+  city = mix(city + onWater, boat.rgb, boat.a) + glare;
+  vec3 wet = rainOnGlass(vec2(vUv.x, 1.0 - vUv.y), panoUv, city);
   float lamp = exp(-dot((vUv - uReflectLampUv) * vec2(1.1, 1.8), (vUv - uReflectLampUv) * vec2(1.1, 1.8)) * 8.0);
   float tv = exp(-dot((vUv - uReflectTVUv) * vec2(1.5, 2.0), (vUv - uReflectTVUv) * vec2(1.5, 2.0)) * 13.0);
   wet += uReflectLamp * lamp * 0.12 + uReflectTV * tv * 0.055;
@@ -467,6 +584,75 @@ function waterPoint([az, el], height) {
   return new THREE.Vector2(r * Math.sin(a), -r * Math.cos(a));
 }
 
+// A small copy of the water mask on the CPU: whether a boat's light is seen against the water or hidden behind
+// the footbridge (or a bank). Same mapping as panoUvFromDir(); v = 0 is the bottom row, like the GPU texture.
+async function loadMask(url, width = 1024) {
+  try {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    await img.decode();
+    const h = Math.max(1, Math.round((width * img.naturalHeight) / img.naturalWidth));
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, width, h);
+    const px = ctx.getImageData(0, 0, width, h).data;
+    const m = new Uint8Array(width * h);
+    for (let i = 0; i < m.length; i += 1) m[i] = px[i * 4];
+    return { w: width, h, m };
+  } catch {
+    return null;
+  }
+}
+
+function maskSampler(mask, azRange, elRange) {
+  const [az0, az1] = azRange;
+  const [el0, el1] = elRange;
+  return (d) => {
+    if (!mask) return 1;
+    const az = THREE.MathUtils.radToDeg(Math.atan2(d.x, -d.z));
+    const el = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(d.y, -1, 1)));
+    const u = (az - az0) / (az1 - az0);
+    const v = (el - el0) / (el1 - el0);
+    if (u < 0 || u > 1 || v < 0 || v > 1) return 0;
+    const x = u * (mask.w - 1);
+    const y = (1 - v) * (mask.h - 1);
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const x1 = Math.min(x0 + 1, mask.w - 1);
+    const y1 = Math.min(y0 + 1, mask.h - 1);
+    const fx = x - x0;
+    const fy = y - y0;
+    const g = (xx, yy) => mask.m[yy * mask.w + xx];
+    return ((g(x0, y0) * (1 - fx) + g(x1, y0) * fx) * (1 - fy) + (g(x0, y1) * (1 - fx) + g(x1, y1) * fx) * fy) / 255;
+  };
+}
+
+// Where a boat carries its lights, in the boat's frame (x from the bow back, y up from the waterline, z to
+// starboard); the numbers follow boatSdf() in the shader. 'cabin' is the lit wheelhouse: only its reflection.
+function boatLightsFor(track) {
+  const len = track.boatLength;
+  const hw = track.boatWidth / 2;
+  const kind = track.kind;
+  const c0 = len * (kind === 2 ? 0.40 : kind === 1 ? 0.28 : 0.42);
+  const c1 = len * (kind === 2 ? 0.74 : kind === 1 ? 0.72 : 0.66);
+  const ch = kind > 0 ? 1.45 : 1.0;
+  return [
+    { p: [c0 - 0.05, 0.85 + ch * 0.55, -hw * 0.64 - 0.03], col: [1.0, 0.07, 0.03], arc: 'port' },
+    { p: [c0 - 0.05, 0.85 + ch * 0.55, hw * 0.64 + 0.03], col: [0.08, 1.0, 0.3], arc: 'stbd' },
+    { p: [c0 + 0.45, 0.85 + ch + 1.1, 0], col: [1.0, 0.93, 0.8], arc: 'mast' },
+    { p: [len - 0.12, 1.05, 0], col: [1.0, 0.93, 0.8], arc: 'stern' },
+    { p: [(c0 + c1) / 2, 0.85 + ch * 0.6, 0], col: [1.0, 0.7, 0.38], arc: 'cabin' },
+  ];
+}
+
+const smooth = (a, b, x) => {
+  const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
 function buildBoats(river) {
   const height = river?.height ?? 36;
   return (river?.tracks || []).slice(0, 3).map((t, i) => {
@@ -505,12 +691,13 @@ export async function createWindowView({
   const meta = await loadMeta(baseUrl);
   const suffix = quality === 'mobile' || quality === 'low' ? '_m' : '';
   const cars = pathUniforms(meta.cars ?? [], 4);
-  const [river, color, lights, water, blur] = await Promise.all([
+  const [river, color, lights, water, blur, mask] = await Promise.all([
     loadRiver(baseUrl),
     loadTexture(loader, assetUrl(baseUrl, `city_color${suffix}.webp`), renderer),
     loadTexture(loader, assetUrl(baseUrl, `city_lights${suffix}.webp`), renderer),
     loadTexture(loader, assetUrl(baseUrl, `city_water${suffix}.webp`), renderer),
     loadTexture(loader, assetUrl(baseUrl, 'city_blur.webp'), renderer),
+    loadMask(assetUrl(baseUrl, 'city_water_m.webp')),
   ]);
   lights.colorSpace = THREE.NoColorSpace;
   water.colorSpace = THREE.NoColorSpace;
@@ -542,6 +729,11 @@ export async function createWindowView({
     uBoatSpan: { value: fixedArray(3, () => new THREE.Vector4()) },
     uBoatLook: { value: fixedArray(3, () => new THREE.Vector4()) },
     uBoatCount: { value: 0 },
+    uLightDir: { value: fixedArray(15, () => new THREE.Vector3(0, -1, 0)) },
+    uLightCol: { value: fixedArray(15, () => new THREE.Vector3()) },
+    uReflAE: { value: fixedArray(15, () => new THREE.Vector4()) },
+    uReflCol: { value: fixedArray(15, () => new THREE.Vector3()) },
+    uLightCount: { value: 0 },
   };
   const tracks = buildBoats(river);
   uniforms.uBoatCount.value = tracks.length;
@@ -564,6 +756,62 @@ export async function createWindowView({
     const sx = THREE.MathUtils.clamp(-(track.origin.x * track.dir.x + track.origin.y * track.dir.y), a, c);
     const p = new THREE.Vector3(track.origin.x + track.dir.x * sx, 0.7, track.origin.y + track.dir.y * sx);
     return observer.distanceTo(p);
+  };
+  const waterAt = maskSampler(mask, [uniforms.uAzRange.value.x, uniforms.uAzRange.value.y], [uniforms.uElRange.value.x, uniforms.uElRange.value.y]);
+  const vL = new THREE.Vector3();
+  const vW = new THREE.Vector3();
+  // every frame: where each boat's lights are, which of them face us (sidelights, masthead, sternlight arcs) and
+  // whether the footbridge hides them; the shader draws them and their reflections
+  const updateBoatLights = () => {
+    const H = uniforms.uRiverH.value;
+    let k = 0;
+    for (const track of tracks) {
+      const b = track.boat;
+      if (!b) continue;
+      const [sMin, sMax] = boatSpan(b);
+      const bow = b.dir > 0 ? sMax : sMin;
+      const u = track.dir;
+      const o = track.origin;
+      const nx = -u.y;
+      const nz = u.x;
+      const ex = b.dir * (bow + (o.x * u.x + o.y * u.y));          // the eye, in the boat's frame
+      const ez = -b.dir * (o.x * nx + o.y * nz);
+      for (const L of boatLightsFor(track)) {
+        if (k >= 15) break;
+        const [bx, by, bz] = L.p;
+        const s = bow - b.dir * bx;
+        const c = b.dir * bz;
+        const wx = o.x + u.x * s + nx * c;
+        const wz = o.y + u.y * s + nz * c;
+        let vx = ex - bx;
+        let vz = ez - bz;
+        const vl = Math.hypot(vx, vz) || 1;
+        vx /= vl;
+        vz /= vl;
+        let vis = 1;
+        if (L.arc === 'port') vis = smooth(-0.08, 0.08, -vz) * (1 - smooth(0.30, 0.46, vx));
+        else if (L.arc === 'stbd') vis = smooth(-0.08, 0.08, vz) * (1 - smooth(0.30, 0.46, vx));
+        else if (L.arc === 'mast') vis = 1 - smooth(0.30, 0.46, vx);
+        else if (L.arc === 'stern') vis = smooth(0.30, 0.46, vx);
+        vL.set(wx, by - H, wz);
+        const dist = vL.length();
+        vL.divideScalar(dist);
+        vW.set(wx, -H, wz).normalize();
+        const seen = smooth(0.25, 0.5, Math.max(waterAt(vL), waterAt(vW)));
+        const fade = Math.exp(-dist / 600) * b.lights;
+        const a = vis * seen * fade;
+        uniforms.uLightDir.value[k].copy(vL);
+        if (L.arc === 'cabin') uniforms.uLightCol.value[k].set(0, 0, 0);
+        else uniforms.uLightCol.value[k].set(L.col[0] * a, L.col[1] * a, L.col[2] * a);
+        vW.set(wx, -by - H, wz).normalize();                          // the light's mirror image under the water
+        const strength = L.arc === 'cabin' ? 0.06 * seen * fade : 0.22 * a;
+        const width = THREE.MathUtils.clamp((L.arc === 'cabin' ? 1.4 : 0.35) / dist, 0.0008, 0.006);
+        uniforms.uReflAE.value[k].set(Math.atan2(vW.x, -vW.z), Math.asin(THREE.MathUtils.clamp(vW.y, -1, 1)), strength, width);
+        uniforms.uReflCol.value[k].set(L.col[0], L.col[1], L.col[2]);
+        k += 1;
+      }
+    }
+    uniforms.uLightCount.value = k;
   };
   const material = new THREE.ShaderMaterial({
     name: 'WindowRainRiaMaterial',
@@ -600,6 +848,7 @@ export async function createWindowView({
         u.set(a, c, b.dir, 1);
         uniforms.uBoatLook.value[track.index].set(track.boatLength, track.boatWidth, track.kind, b.lights);
       }
+      updateBoatLights();
       if (rain >= 1 && time > lightningAt) {
         lightning = 1.0;
         lightningAt = time + 40 + Math.random() * 80;

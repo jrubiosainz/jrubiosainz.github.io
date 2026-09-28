@@ -145,8 +145,9 @@ export function drawSeven(ctx, text, x, y, scale, color, ghost = 'rgba(111,244,2
   ctx.translate(x, y);
   ctx.transform(1, 0, skew, 1, 0, 0);
   for (const ch of String(text)) {
-    if (ch === ':') {
-      ctx.fillStyle = color;
+    // ':' a lit colon, ';' the same colon switched off (blinking clocks): same cell, so nothing after it moves
+    if (ch === ':' || ch === ';') {
+      ctx.fillStyle = ch === ':' ? color : ghost;
       ctx.fillRect(8 * scale, 18 * scale, 4 * scale, 4 * scale);
       ctx.fillRect(8 * scale, 38 * scale, 4 * scale, 4 * scale);
       ctx.translate(18 * scale, 0);

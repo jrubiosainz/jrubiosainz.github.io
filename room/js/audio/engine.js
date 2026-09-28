@@ -61,6 +61,12 @@ export class AudioEngine {
     return this;
   }
 
+  // fetch and decode a few sounds on demand: Reachy's voice lines (group 'voice') are not decoded at start-up
+  async preload(names) {
+    if (!this.ctx) return;
+    await this._decodeList(names.filter((n) => this.manifest[n]).map((n) => [n, this.manifest[n]]));
+  }
+
   setEnabled(on) {
     this._enabled = !!on;
     localStorage.setItem(STORAGE_KEY, this._enabled ? 'on' : 'off');

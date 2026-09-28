@@ -511,70 +511,504 @@
     "duration": 2.35,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_blank_es": {
     "file": "reachy_blank_es.mp3",
     "duration": 2.621,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_career_en": {
     "file": "reachy_career_en.mp3",
     "duration": 4.143,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_career_es": {
     "file": "reachy_career_es.mp3",
     "duration": 4.404,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_greet_en": {
     "file": "reachy_greet_en.mp3",
-    "duration": 3.873,
+    "duration": 4.655,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_greet_es": {
     "file": "reachy_greet_es.mp3",
-    "duration": 3.904,
+    "duration": 4.563,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_greet_touch_en": {
     "file": "reachy_greet_touch_en.mp3",
     "duration": 7.006,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_greet_touch_es": {
     "file": "reachy_greet_touch_es.mp3",
     "duration": 9.34,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
+  },
+  "reachy_h_cd_en": {
+    "file": "reachy_h_cd_en.mp3",
+    "duration": 3.512,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_cd_es": {
+    "file": "reachy_h_cd_es.mp3",
+    "duration": 4.004,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_cd_keys_en": {
+    "file": "reachy_h_cd_keys_en.mp3",
+    "duration": 3.483,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_cd_keys_es": {
+    "file": "reachy_h_cd_keys_es.mp3",
+    "duration": 3.726,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch1_en": {
+    "file": "reachy_h_ch1_en.mp3",
+    "duration": 1.955,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch1_es": {
+    "file": "reachy_h_ch1_es.mp3",
+    "duration": 2.238,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch2_en": {
+    "file": "reachy_h_ch2_en.mp3",
+    "duration": 2.745,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch2_es": {
+    "file": "reachy_h_ch2_es.mp3",
+    "duration": 2.756,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch3_en": {
+    "file": "reachy_h_ch3_en.mp3",
+    "duration": 2.767,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_ch3_es": {
+    "file": "reachy_h_ch3_es.mp3",
+    "duration": 2.982,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_credits_en": {
+    "file": "reachy_h_credits_en.mp3",
+    "duration": 2.516,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_credits_es": {
+    "file": "reachy_h_credits_es.mp3",
+    "duration": 3.199,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_knobs_en": {
+    "file": "reachy_h_knobs_en.mp3",
+    "duration": 3.335,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_knobs_es": {
+    "file": "reachy_h_knobs_es.mp3",
+    "duration": 3.113,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_lamp_off_en": {
+    "file": "reachy_h_lamp_off_en.mp3",
+    "duration": 3.075,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_lamp_off_es": {
+    "file": "reachy_h_lamp_off_es.mp3",
+    "duration": 3.066,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_lamp_on_en": {
+    "file": "reachy_h_lamp_on_en.mp3",
+    "duration": 1.587,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_lamp_on_es": {
+    "file": "reachy_h_lamp_on_es.mp3",
+    "duration": 1.965,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_about_en": {
+    "file": "reachy_h_nav_about_en.mp3",
+    "duration": 3.315,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_about_es": {
+    "file": "reachy_h_nav_about_es.mp3",
+    "duration": 2.594,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_online_en": {
+    "file": "reachy_h_nav_online_en.mp3",
+    "duration": 3.032,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_online_es": {
+    "file": "reachy_h_nav_online_es.mp3",
+    "duration": 3.048,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_posts_en": {
+    "file": "reachy_h_nav_posts_en.mp3",
+    "duration": 2.59,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_posts_es": {
+    "file": "reachy_h_nav_posts_es.mp3",
+    "duration": 2.547,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_work_en": {
+    "file": "reachy_h_nav_work_en.mp3",
+    "duration": 3.088,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_nav_work_es": {
+    "file": "reachy_h_nav_work_es.mp3",
+    "duration": 2.953,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_notepad_en": {
+    "file": "reachy_h_notepad_en.mp3",
+    "duration": 3.886,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_notepad_es": {
+    "file": "reachy_h_notepad_es.mp3",
+    "duration": 4.868,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_pc_en": {
+    "file": "reachy_h_pc_en.mp3",
+    "duration": 3.304,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_pc_es": {
+    "file": "reachy_h_pc_es.mp3",
+    "duration": 4.575,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_phone_en": {
+    "file": "reachy_h_phone_en.mp3",
+    "duration": 2.799,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_phone_es": {
+    "file": "reachy_h_phone_es.mp3",
+    "duration": 2.817,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_phone_up_en": {
+    "file": "reachy_h_phone_up_en.mp3",
+    "duration": 1.768,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_phone_up_es": {
+    "file": "reachy_h_phone_up_es.mp3",
+    "duration": 1.603,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_reachy_en": {
+    "file": "reachy_h_reachy_en.mp3",
+    "duration": 2.735,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_reachy_es": {
+    "file": "reachy_h_reachy_es.mp3",
+    "duration": 3.202,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_sound_off_en": {
+    "file": "reachy_h_sound_off_en.mp3",
+    "duration": 2.707,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_sound_off_es": {
+    "file": "reachy_h_sound_off_es.mp3",
+    "duration": 2.29,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_sound_on_en": {
+    "file": "reachy_h_sound_on_en.mp3",
+    "duration": 1.9,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_sound_on_es": {
+    "file": "reachy_h_sound_on_es.mp3",
+    "duration": 1.879,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tv_en": {
+    "file": "reachy_h_tv_en.mp3",
+    "duration": 2.736,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tv_es": {
+    "file": "reachy_h_tv_es.mp3",
+    "duration": 3.09,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tv_off_en": {
+    "file": "reachy_h_tv_off_en.mp3",
+    "duration": 3.075,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tv_off_es": {
+    "file": "reachy_h_tv_off_es.mp3",
+    "duration": 3.676,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvmode_en": {
+    "file": "reachy_h_tvmode_en.mp3",
+    "duration": 4.134,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvmode_es": {
+    "file": "reachy_h_tvmode_es.mp3",
+    "duration": 4.34,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvpower_off_en": {
+    "file": "reachy_h_tvpower_off_en.mp3",
+    "duration": 2.003,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvpower_off_es": {
+    "file": "reachy_h_tvpower_off_es.mp3",
+    "duration": 2.215,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvpower_on_en": {
+    "file": "reachy_h_tvpower_on_en.mp3",
+    "duration": 1.949,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_tvpower_on_es": {
+    "file": "reachy_h_tvpower_on_es.mp3",
+    "duration": 1.549,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_eject_en": {
+    "file": "reachy_h_vcr_eject_en.mp3",
+    "duration": 2.12,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_eject_es": {
+    "file": "reachy_h_vcr_eject_es.mp3",
+    "duration": 2.499,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_en": {
+    "file": "reachy_h_vcr_en.mp3",
+    "duration": 3.23,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_es": {
+    "file": "reachy_h_vcr_es.mp3",
+    "duration": 3.837,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_keys_en": {
+    "file": "reachy_h_vcr_keys_en.mp3",
+    "duration": 4.581,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_keys_es": {
+    "file": "reachy_h_vcr_keys_es.mp3",
+    "duration": 4.74,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_rec_en": {
+    "file": "reachy_h_vcr_rec_en.mp3",
+    "duration": 3.364,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_rec_es": {
+    "file": "reachy_h_vcr_rec_es.mp3",
+    "duration": 3.688,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_tape_en": {
+    "file": "reachy_h_vcr_tape_en.mp3",
+    "duration": 2.656,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_vcr_tape_es": {
+    "file": "reachy_h_vcr_tape_es.mp3",
+    "duration": 3.153,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_window_en": {
+    "file": "reachy_h_window_en.mp3",
+    "duration": 3.192,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
+  },
+  "reachy_h_window_es": {
+    "file": "reachy_h_window_es.mp3",
+    "duration": 3.558,
+    "loop": false,
+    "gain": 0.0,
+    "group": "voice"
   },
   "reachy_projects_en": {
     "file": "reachy_projects_en.mp3",
     "duration": 3.856,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_projects_es": {
     "file": "reachy_projects_es.mp3",
     "duration": 4.353,
     "loop": false,
     "gain": 0.0,
-    "group": "sfx"
+    "group": "voice"
   },
   "reachy_sleep": {
     "file": "reachy_sleep.mp3",

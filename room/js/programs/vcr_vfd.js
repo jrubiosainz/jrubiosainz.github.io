@@ -67,7 +67,7 @@ export default {
         const transport = s === 'play' || s === 'ff' || s === 'rew';
         const text = transport ? counterText(state.counter || t) : now;
         const colonOn = s !== 'empty' || Math.floor(t * 2) % 2 === 0;
-        const display = colonOn ? text : text.replace(':', ' ');
+        const display = colonOn ? text : text.replace(':', ';');
         glow(() => drawSeven(ctx, display, transport ? 15 : 46, 15, transport ? .45 : .72, CYAN, 'rgba(111,244,255,.075)', -.08));
         if (s === 'loading') {
           glow(() => {
