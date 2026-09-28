@@ -1,0 +1,1 @@
+Generated. The files in this folder are the 3D room website (https://jrubiosainz.github.io/), copied here by tools/publish_home.sh from the private habitacion-web repository. Do not edit them by hand.
