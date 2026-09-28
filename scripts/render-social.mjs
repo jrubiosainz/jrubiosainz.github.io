@@ -4,8 +4,8 @@ const browser = await (process.env.BROWSER === "firefox" ? firefox : chromium).l
 try {
   for (const lang of ["en", "es"]) {
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, reducedMotion: "reduce" });
-    const base = process.env.PREVIEW_URL || "http://127.0.0.1:4321/";
-    await page.goto(new URL(lang === "es" ? "/es/" : "/", base).href, { waitUntil: "networkidle" });
+    const base = process.env.PREVIEW_URL || "http://127.0.0.1:4321/portfolio/";
+    await page.goto(new URL(lang === "es" ? "es/" : "./", base).href, { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
     await page.addStyleTag({ content: `
       .site-header,.utility-dock,.scroll-cue,.hero-dimension,.portrait-orbit { display:none!important }

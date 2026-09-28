@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Programme bench</title>
+  <link rel="stylesheet" href="../css/fonts.css">
+  <style>
+    /*
+    THESIS: This bench treats every programme as a piece of bench equipment, not a browser demo.
+    OWN-WORLD: Night-workshop black, phosphor cyan, broadcast blue, amber labels, squared controls.
+    STORY: Pick a screen, feed it signal events, watch emissions and frame cost immediately.
+    FIRST VIEWPORT: Large CRT stage left, dense signal console right, programme strip above.
+    FORM: Established-world extension; 1990s service monitor diagnostics rather than generic cards.
+    */
+    :root { color-scheme: dark; --bg:#07080d; --panel:#111827; --line:#2b3448; --ink:#f4eadc; --amber:#ffbd65; --cyan:#6ff4ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, #0b0f18, var(--bg) 34rem); color: var(--ink); font-family: "Courier Prime", ui-monospace, monospace; }
+    header { padding: 22px 28px 10px; display:flex; align-items:end; justify-content:space-between; gap:20px; }
+    h1 { margin:0; font-family: Archivo, system-ui, sans-serif; font-size: clamp(28px, 4vw, 54px); font-weight: 900; font-stretch: 120%; letter-spacing: -.04em; }
+    .meta { color: var(--amber); font: 24px VT323, monospace; }
+    .program-strip { display:flex; gap:8px; overflow:auto; padding: 10px 28px 20px; }
+    .program-strip button, .controls button, select, input[type=range] { font: 20px VT323, monospace; color: var(--ink); background:#151b2a; border:1px solid var(--line); padding:8px 10px; }
+    .program-strip button[aria-pressed=true] { background: #1d34c9; border-color:#f8fbff; }
+    main { display:grid; grid-template-columns: minmax(720px, 1fr) 360px; gap:24px; padding: 0 28px 28px; align-items:start; }
+    .stage { display:grid; place-items:center; min-height: 760px; padding:32px; border:1px solid var(--line); background: #080b12; box-shadow: inset 0 18px 44px rgba(0,0,0,.28); }
+    .crt { position:relative; padding: 28px; border-radius: 28px; background: linear-gradient(135deg, #272b30, #08090a); box-shadow: 0 32px 80px rgba(0,0,0,.6); }
+    .crt::after { content:""; position:absolute; inset:28px; pointer-events:none; background: linear-gradient(rgba(255,255,255,.05) 50%, rgba(0,0,0,.08) 50%) 0 0/100% 4px; mix-blend-mode:overlay; opacity:.45; border-radius: 10px; }
+    canvas { display:block; image-rendering:auto; background:#000; border-radius: 10px; box-shadow: 0 20px 40px rgba(0,0,0,.55); }
+    .scale-tv canvas { width:960px; height:720px; }
+    .scale-vfd canvas { width:768px; height:192px; }
+    .scale-lcd canvas { width:480px; height:144px; }
+    .controls { display:grid; gap:16px; }
+    .panel { border:1px solid var(--line); background:rgba(12,16,26,.84); padding:16px; }
+    .panel h2 { margin:0 0 12px; font: 28px VT323, monospace; color:var(--amber); }
+    .field { display:grid; gap:7px; margin: 0 0 12px; }
+    label { font: 18px VT323, monospace; color:#cfd6e6; }
+    .keys { display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; }
+    #log { height: 190px; overflow:auto; margin:0; color:#96ffb0; font: 14px Courier Prime, monospace; white-space:pre-wrap; }
+    @media (max-width: 1180px) { main { grid-template-columns:1fr; } .scale-tv canvas { width:min(960px, calc(100vw - 120px)); height:auto; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Programme bench</h1>
+    <div class="meta">SIGNAL ROUTER · LOCAL DEV</div>
+  </header>
+  <nav class="program-strip" id="programs"></nav>
+  <main>
+    <section class="stage">
+      <div class="crt scale-tv" id="frame"><canvas id="screen"></canvas></div>
+    </section>
+    <aside class="controls">
+      <section class="panel">
+        <h2>Signal inputs</h2>
+        <div class="field"><label>Progress</label><input id="progress" type="range" min="0" max="1" step=".01" value=".35"></div>
+        <div class="field"><label>Highlight</label><input id="highlight" type="range" min="0" max="8" step="1" value="0"></div>
+        <div class="field"><label>Tape work item</label><select id="workItem"></select></div>
+        <div class="keys">
+          <button data-key="ArrowUp">↑</button><button data-key="ArrowDown">↓</button><button data-key="ArrowLeft">←</button><button data-key="ArrowRight">→</button>
+          <button data-key="Enter">Enter</button><button data-key="r">Red</button><button data-key="g">Green</button><button data-key="y">Yellow</button><button data-key="c">Cyan</button><button data-key="1">1</button><button data-key="0">0</button><button data-key="2">2</button>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Device state</h2>
+        <div class="keys">
+          <button data-vcr="empty">Empty</button><button data-vcr="loading">Load</button><button data-vcr="play">Play</button><button data-vcr="stop">Stop</button><button data-vcr="ff">FF</button><button data-vcr="rew">Rew</button><button data-vcr="eject">Eject</button><button id="vol">Vol</button>
+        </div>
+      </section>
+      <section class="panel"><h2>Emitted events</h2><pre id="log"></pre></section>
+    </aside>
+  </main>
+  <script type="module">
+    import content from '../js/content.js';
+    import { workItems } from '../js/content.js';
+    import { programs, mountProgram } from '../js/programs/index.js';
+    const canvas = document.getElementById('screen');
+    const frame = document.getElementById('frame');
+    const nav = document.getElementById('programs');
+    const log = document.getElementById('log');
+    const works = workItems(content);
+    const workSelect = document.getElementById('workItem');
+    works.forEach((it, i) => workSelect.append(new Option(`${i + 1}. ${it.title}`, i)));
+    let currentId = 'tv_ident';
+    let inst = null;
+    let start = performance.now();
+    let last = start;
+    let vcrCounter = 0;
+    function emit(ev) {
+      log.textContent = `${new Date().toLocaleTimeString()} ${JSON.stringify(ev)}\n${log.textContent}`.slice(0, 4000);
+    }
+    function mount(id) {
+      inst?.stop?.();
+      currentId = id;
+      const params = id === 'tv_tape' ? { item: works[Number(workSelect.value) || 0], index: Number(workSelect.value) || 0 } : {};
+      inst = mountProgram(id, { canvas, content, params, emit });
+      frame.className = `crt ${id === 'vcr_vfd' ? 'scale-vfd' : id === 'cdp_lcd' ? 'scale-lcd' : 'scale-tv'}`;
+      start = performance.now();
+      last = start;
+      [...nav.children].forEach((b) => b.setAttribute('aria-pressed', b.dataset.id === id));
+    }
+    Object.values(programs).forEach((p) => {
+      const b = document.createElement('button');
+      b.textContent = p.id;
+      b.dataset.id = p.id;
+      b.onclick = () => mount(p.id);
+      nav.append(b);
+    });
+    function tick(now) {
+      const t = (now - start) / 1000;
+      const dt = (now - last) / 1000;
+      last = now;
+      vcrCounter += dt;
+      inst?.frame?.(t, dt);
+      requestAnimationFrame(tick);
+    }
+    document.getElementById('progress').oninput = (e) => inst?.input?.({ type: 'progress', value: Number(e.target.value), label: 'STREAMING PROGRAMME' });
+    document.getElementById('highlight').oninput = (e) => inst?.input?.({ type: 'highlight', index: Number(e.target.value) });
+    workSelect.onchange = () => currentId === 'tv_tape' && mount('tv_tape');
+    document.querySelectorAll('[data-key]').forEach((b) => b.onclick = () => inst?.input?.({ type: 'key', key: b.dataset.key, code: b.dataset.key, down: true }));
+    document.querySelectorAll('[data-vcr]').forEach((b) => b.onclick = () => inst?.input?.({ type: 'state', state: b.dataset.vcr, counter: vcrCounter, title: 'TAPE' }));
+    document.getElementById('vol').onclick = () => inst?.input?.({ type: 'state', volume: Math.random(), playing: true, time: Math.floor(performance.now() / 1000) % 260 });
+    canvas.addEventListener('pointerdown', (e) => {
+      const r = canvas.getBoundingClientRect();
+      inst?.input?.({ type: 'pointer', kind: 'down', x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+    });
+    window.addEventListener('keydown', (e) => inst?.input?.({ type: 'key', key: e.key, code: e.code, shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey, down: true }));
+    mount(currentId);
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

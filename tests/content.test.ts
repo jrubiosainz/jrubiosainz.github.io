@@ -3,6 +3,9 @@ import { readFile, access } from "node:fs/promises";
 import test from "node:test";
 import { copy, identity, publications, professionalNotes, focusAreas } from "../src/content/site.ts";
 
+const portfolioPath = (path: string) => `/portfolio${path}`;
+const publicPath = (path: string) => path.replace(/^\/portfolio/, "");
+
 test("Both language dictionaries are complete", () => {
   assert.deepEqual(Object.keys(copy.en).sort(), Object.keys(copy.es).sort());
   for (const entries of Object.values(copy)) for (const value of Object.values(entries)) assert.ok(value.trim());
@@ -48,8 +51,8 @@ test("Localized social previews are original 1200 x 630 images", async () => {
 test("Both editions describe the point photograph and reference fresh portrait and social URLs", async () => {
   for (const lang of ["en", "es"] as const) {
     const html = await readFile(lang === "es" ? "dist/es/index.html" : "dist/index.html", "utf8");
-    assert.ok(html.includes("/creator/portrait-points.png"));
-    assert.ok(html.includes(`/portrait-points-preview${lang === "es" ? "-es" : ""}.png`));
+    assert.ok(html.includes(portfolioPath("/creator/portrait-points.png")));
+    assert.ok(html.includes(portfolioPath(`/portrait-points-preview${lang === "es" ? "-es" : ""}.png`)));
     assert.ok(!html.includes("/creator/portrait.png"));
     assert.ok(!html.includes("/creator-preview"));
     assert.match(copy[lang].portraitAlt, lang === "en" ? /photograph.*silver points/ : /Fotografía.*puntos plateados/);
@@ -75,7 +78,7 @@ test("Every project includes local media and localized alternative text", async 
     assert.ok(publication.image.alt.en.length > 20);
     assert.ok(publication.image.alt.es.length > 20);
     assert.notEqual(publication.image.alt.en, publication.image.alt.es);
-    const image = await readFile(`public${publication.image.src}`);
+    const image = await readFile(`public${publicPath(publication.image.src)}`);
     assert.ok(image.length > 10_000);
     assert.equal(image.readUInt16BE(0), 0xffd8);
   }

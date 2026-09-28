@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint texture bench</title>
+  <link rel="stylesheet" href="../css/fonts.css">
+  <style>
+    /*
+    THESIS: Texture painters are inspected as physical print proofs, not flat asset thumbnails.
+    OWN-WORLD: Dark workbench, warm paper, worn cardboard, service-label typography.
+    STORY: Verify every generated surface at the exact aspect it maps to before it enters 3D.
+    FIRST VIEWPORT: Tape proofs lead, notepad and instant photo sit as larger objects below.
+    FORM: Established room-world extension; a print shop contact sheet for runtime canvases.
+    */
+    :root { color-scheme: dark; --bg:#090b0e; --ink:#efe7d8; --line:#2b3039; --amber:#ffbd65; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:linear-gradient(180deg,#11151c,#090b0e 480px); color:var(--ink); font-family:"Courier Prime", ui-monospace, monospace; }
+    header { padding:28px 32px 12px; display:flex; justify-content:space-between; align-items:end; gap:24px; }
+    h1 { margin:0; font-family:Archivo, system-ui, sans-serif; font-size:clamp(34px,5vw,68px); font-weight:900; line-height:.9; font-stretch:120%; letter-spacing:-.045em; }
+    .tag { color:var(--amber); font-family:VT323, monospace; font-size:26px; }
+    main { display:grid; gap:28px; padding:22px 32px 42px; }
+    section { border:1px solid var(--line); background:#11151c; padding:18px; box-shadow:0 22px 50px rgba(0,0,0,.38); }
+    h2 { margin:0 0 16px; color:var(--amber); font-family:VT323, monospace; font-size:32px; font-weight:400; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
+    figure { margin:0; display:grid; gap:8px; }
+    figcaption { color:#c8bfae; font:13px "Courier Prime", ui-monospace, monospace; }
+    canvas { display:block; max-width:100%; height:auto; background:#000; border:1px solid rgba(255,255,255,.08); }
+    .spine { width:512px; }
+    .cover { width:512px; }
+    .label { width:384px; }
+    .wide { display:grid; grid-template-columns:minmax(360px,680px) 260px; gap:22px; align-items:start; }
+    #notepad { width:100%; }
+    #photo { width:260px; transform:rotate(-1.2deg); transform-origin:50% 20%; }
+    @media (max-width: 900px) { .wide { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Paint texture bench</h1>
+    <div class="tag">CANVAS PRINT PROOFS · DETERMINISTIC</div>
+  </header>
+  <main>
+    <section>
+      <h2>Tape spines</h2>
+      <div class="grid" id="spines"></div>
+    </section>
+    <section>
+      <h2>Tape covers</h2>
+      <div class="grid" id="covers"></div>
+    </section>
+    <section>
+      <h2>Cassette labels</h2>
+      <div class="grid" id="labels"></div>
+    </section>
+    <section>
+      <h2>Desk paper</h2>
+      <div class="wide">
+        <canvas id="notepad" width="1024" height="1700"></canvas>
+        <canvas id="photo" width="512" height="630"></canvas>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import content, { workItems } from '../js/content.js';
+    import { paintSpine, paintCover, paintCassetteLabel, paintNotepad, paintPhoto } from '../js/paint/index.js';
+    const items = workItems(content);
+    function addCanvas(root, klass, w, h, caption) {
+      const fig = document.createElement('figure');
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h; canvas.className = klass;
+      const cap = document.createElement('figcaption');
+      cap.textContent = caption;
+      fig.append(canvas, cap);
+      root.append(fig);
+      return canvas;
+    }
+    const spinesRoot = document.getElementById('spines');
+    const coversRoot = document.getElementById('covers');
+    const labelsRoot = document.getElementById('labels');
+    for (let i = 0; i < items.length; i += 1) {
+      await paintSpine(addCanvas(spinesRoot, 'spine', 1024, 144, items[i].title), items[i], i);
+      await paintCover(addCanvas(coversRoot, 'cover', 1024, 600, items[i].title), items[i], i);
+      await paintCassetteLabel(addCanvas(labelsRoot, 'label', 768, 96, items[i].title), items[i], i);
+    }
+    const longFixture = {
+      ...items.find((it) => it.tape?.style === 'split'),
+      id: 'long-title-fixture',
+      title: 'Language Model Playground Experiments',
+      years: '2024–now',
+    };
+    await paintSpine(addCanvas(spinesRoot, 'spine', 1024, 144, 'Long title split fixture'), longFixture, 99);
+    let highlight = 0;
+    const note = document.getElementById('notepad');
+    async function redrawNote() {
+      await paintNotepad(note, content, { highlight });
+      highlight = (highlight + 1) % items.length;
+    }
+    await redrawNote();
+    setInterval(redrawNote, 1600);
+    const img = new Image();
+    img.onload = () => paintPhoto(document.getElementById('photo'), img);
+    img.onerror = () => paintPhoto(document.getElementById('photo'), null);
+    img.src = `../${content.site.photo}`;
+  </script>
+</body>
+</html>

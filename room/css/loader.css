@@ -1,0 +1,71 @@
+.site-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: #07080d;
+  color: #f8fbff;
+  font-family: VT323, monospace;
+  opacity: 1;
+  transition: opacity 600ms ease;
+}
+
+.site-loader.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.site-loader__noise {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,255,255,.045) 50%, rgba(0,0,0,.02) 50%) 0 0 / 100% 4px,
+    radial-gradient(circle at 35% 25%, rgba(29,52,201,.18), transparent 32rem);
+  opacity: .7;
+}
+
+.site-loader__panel {
+  position: relative;
+  width: min(560px, calc(100vw - 40px));
+  padding: 24px 28px 22px;
+  background: #1d34c9;
+  box-shadow: 0 32px 90px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.14);
+  text-shadow: 3px 3px 0 rgba(0,0,0,.5);
+}
+
+.site-loader__top,
+.site-loader__bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.site-loader__bar {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 5px;
+  margin: 32px 0 16px;
+}
+
+.site-loader__bar i {
+  display: block;
+  height: 26px;
+  background: rgba(255,255,255,.22);
+}
+
+.site-loader__bar i.is-on {
+  background: #f8fbff;
+}
+
+.site-loader__bottom {
+  font-size: 26px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-loader {
+    transition: none;
+  }
+}

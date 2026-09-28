@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vantec PC 286 dev</title>
+  <link rel="stylesheet" href="../css/fonts.css">
+  <style>
+    :root { color-scheme: dark; background: #050905; color: #9cffb2; font-family: 'Courier Prime', monospace; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at 50% 25%, #102715, #030603 70%); }
+    main { display: grid; grid-template-columns: auto 320px; gap: 24px; align-items: start; }
+    canvas { width: 1280px; height: 800px; image-rendering: pixelated; background: #001406; border: 14px solid #2a241d; border-radius: 18px; box-shadow: 0 0 28px #23ff5a66, inset 0 0 34px #000; outline: none; }
+    aside { max-height: 800px; overflow: auto; background: #071008; border: 1px solid #276d38; padding: 14px; box-shadow: 10px 14px 24px rgba(0, 0, 0, .45); }
+    p { font-family: Archivo, system-ui, sans-serif; font-size: 14px; line-height: 1.45; color: #c9f5d2; }
+    button { margin: 3px; padding: 7px 10px; background: #102515; color: #9cffb2; border: 1px solid #40b85a; font: 16px 'VT323', monospace; cursor: pointer; }
+    button:hover { background: #173d20; }
+    #log { white-space: pre-wrap; font-size: 12px; color: #70c982; }
+    h1 { font: 28px 'VT323', monospace; margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="screen" width="640" height="400" tabindex="0" aria-label="vantec PC 286"></canvas>
+    <aside>
+      <h1>vantec PC 286</h1>
+      <p>Click the screen and type. Commands can be injected below.</p>
+      <p>
+        <button data-cmd="ABOUT">ABOUT</button>
+        <button data-cmd="ONLINE">ONLINE</button>
+        <button data-cmd="HELP">HELP</button>
+        <button data-cmd="DEMO">DEMO</button>
+        <button data-cmd='RUN "MAZE"'>RUN "MAZE"</button>
+        <button data-run="ABOUT">run ABOUT</button>
+        <button data-run="ONLINE">run ONLINE</button>
+        <button id="sound">Enable sound</button>
+      </p>
+      <p id="meta">mode: boot</p>
+      <div id="log"></div>
+    </aside>
+  </main>
+  <script type="module">
+    import pc from '../js/pc/index.js';
+    import content from '../js/content.js';
+
+    const canvas = document.getElementById('screen');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const log = document.getElementById('log');
+    const meta = document.getElementById('meta');
+    let audio = null;
+    let instance = null;
+    const events = [];
+    const emit = (ev) => {
+      events.unshift(`${new Date().toLocaleTimeString()} ${JSON.stringify(ev)}`);
+      events.length = Math.min(events.length, 80);
+      log.textContent = events.join('\n');
+    };
+    function mount() {
+      instance?.stop?.();
+      instance = pc.mount({ canvas, ctx, width: 640, height: 400, audio, content, emit });
+    }
+    await document.fonts?.load('20px VT323');
+    mount();
+    let last = performance.now();
+    function frame(now) {
+      const dt = (now - last) / 1000;
+      last = now;
+      instance.frame(now / 1000, dt);
+      meta.textContent = `mode: ${instance.meta.mode}`;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    canvas.focus();
+    canvas.addEventListener('keydown', (e) => {
+      e.preventDefault();
+      instance.input({ type: 'key', key: e.key, code: e.code, ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey, repeat: e.repeat, down: true });
+    });
+    canvas.addEventListener('keyup', (e) => {
+      e.preventDefault();
+      instance.input({ type: 'key', key: e.key, code: e.code, ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey, repeat: e.repeat, down: false });
+    });
+    canvas.addEventListener('paste', (e) => {
+      e.preventDefault();
+      instance.input({ type: 'paste', text: e.clipboardData.getData('text/plain') });
+    });
+    document.querySelectorAll('[data-cmd]').forEach((b) => b.addEventListener('click', () => {
+      canvas.focus();
+      instance.input({ type: 'command', text: b.dataset.cmd });
+    }));
+    document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', () => {
+      canvas.focus();
+      instance.input({ type: 'run', command: b.dataset.run });
+    }));
+    document.getElementById('sound').addEventListener('click', async () => {
+      const context = new AudioContext();
+      await context.resume();
+      audio = { context, destination: context.destination };
+      instance.input({ type: 'audio', audio });
+      canvas.focus();
+    });
+  </script>
+</body>
+</html>

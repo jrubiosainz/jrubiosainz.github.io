@@ -1,5 +1,8 @@
 export type Language = "en" | "es";
 
+const baseUrl = ((import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/portfolio/").replace(/\/?$/, "/");
+const withBase = (path: string) => `${baseUrl}${path.replace(/^\//, "")}`;
+
 export const identity = {
   name: "Jesús Rubio Sainz",
   role: "Cloud Solution Architect, AI & Apps",
@@ -41,7 +44,7 @@ export const publications: LinkedInPublication[] = [
     kind: { en: "ORIGINAL AI SHORT FILM", es: "CORTOMETRAJE ORIGINAL CON IA" },
     tools: { en: "GENERATIVE VIDEO / VOICE / MUSIC", es: "VÍDEO GENERATIVO / VOZ / MÚSICA" },
     image: {
-      src: "/media/maple-leaf.jpg", width: 1260, height: 720,
+      src: withBase("/media/maple-leaf.jpg"), width: 1260, height: 720,
       alt: { en: "Original Maple Leaf video poster: a red maple-leaf character surfing a wave.", es: "Portada original del vídeo Maple Leaf: un personaje de hoja de arce roja surfea una ola." },
     },
   },
@@ -57,7 +60,7 @@ export const publications: LinkedInPublication[] = [
     kind: { en: "3D AI RPG / TECHNICAL PROTOTYPE", es: "RPG 3D CON IA / PROTOTIPO TÉCNICO" },
     tools: { en: "UNITY / COPILOT / MICROSOFT FOUNDRY", es: "UNITY / COPILOT / MICROSOFT FOUNDRY" },
     image: {
-      src: "/media/ai-rpg.jpg", width: 800, height: 474,
+      src: withBase("/media/ai-rpg.jpg"), width: 800, height: 474,
       alt: { en: "Original LinkedIn image of the 3D RPG: a character answers a question using Bing search.", es: "Imagen original del RPG 3D publicada en LinkedIn: un personaje responde a una pregunta con búsquedas en Bing." },
     },
   },
@@ -73,7 +76,7 @@ export const publications: LinkedInPublication[] = [
     kind: { en: "DESKTOP ASSISTANT / COPILOT SDK", es: "ASISTENTE DE ESCRITORIO / COPILOT SDK" },
     tools: { en: "COPILOT SDK / APPLICATIONS / AUTOMATION", es: "COPILOT SDK / APLICACIONES / AUTOMATIZACIÓN" },
     image: {
-      src: "/media/desktop-assistant.jpg", width: 800, height: 613,
+      src: withBase("/media/desktop-assistant.jpg"), width: 800, height: 613,
       alt: { en: "Original LinkedIn image of Desktop Assistant, showing application, file and system interaction tools.", es: "Imagen original de Desktop Assistant publicada en LinkedIn, con herramientas para aplicaciones, archivos y ajustes del sistema." },
     },
   },
@@ -132,6 +135,7 @@ export const en = {
   approach: "Approach",
   projects: "Projects",
   contact: "Contact",
+  room: "Room",
   contactMe: "Let's talk",
   scroll: "Scroll to explore",
   language: "Change language",
@@ -188,6 +192,7 @@ export const es: typeof en = {
   approach: "Enfoque",
   projects: "Proyectos",
   contact: "Contacto",
+  room: "Habitación",
   contactMe: "Hablemos",
   scroll: "Desliza para explorar",
   language: "Cambiar idioma",

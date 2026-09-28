@@ -1,0 +1,74 @@
+{
+  "about": "Small boats on the r\u00eda. Tracks are two panorama points (azimuth, elevation degrees) lying on visible water and dropped onto a water plane `height` metres below the window. Check with tools/river_overlay.py.",
+  "height": 36,
+  "tracks": [
+    {
+      "near": [
+        -29.08,
+        -23.0
+      ],
+      "far": [
+        12.67,
+        -6.63
+      ],
+      "kind": "launch",
+      "length": 8.5,
+      "width": 2.4,
+      "speed": 3.1,
+      "every": [
+        24,
+        55
+      ],
+      "directions": [
+        1,
+        -1
+      ],
+      "first": 2
+    },
+    {
+      "near": [
+        -33.66,
+        -18.71
+      ],
+      "far": [
+        11.19,
+        -8.27
+      ],
+      "kind": "cabin",
+      "length": 11.0,
+      "width": 3.0,
+      "speed": 2.4,
+      "every": [
+        44,
+        90
+      ],
+      "directions": [
+        1
+      ],
+      "first": 18
+    },
+    {
+      "near": [
+        -36.49,
+        -23.13
+      ],
+      "far": [
+        -11.03,
+        -20.53
+      ],
+      "kind": "pilot",
+      "length": 6.5,
+      "width": 2.0,
+      "speed": 3.7,
+      "every": [
+        45,
+        95
+      ],
+      "directions": [
+        -1,
+        1
+      ],
+      "first": 28
+    }
+  ]
+}

@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run preview -- --port 4322",
-    url: "http://127.0.0.1:4322",
+    url: "http://127.0.0.1:4322/portfolio/",
     reuseExistingServer: !process.env.CI,
   },
 });

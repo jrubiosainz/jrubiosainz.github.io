@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HUD dev — Jesús Rubio</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/hud.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #07080d;
+      color: #efe9dc;
+      font-family: Archivo, system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(110deg, rgba(7, 8, 13, .32), rgba(7, 8, 13, .86)),
+        url("/assets/images/room_home.webp") center / cover no-repeat,
+        radial-gradient(circle at 28% 24%, rgba(255, 184, 103, .18), transparent 24rem),
+        radial-gradient(circle at 74% 42%, rgba(86, 135, 255, .16), transparent 28rem),
+        #07080d;
+    }
+
+    .dev-stage {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .dev-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 45%, transparent 0 42%, rgba(0, 0, 0, .55) 100%);
+    }
+
+    .dev-object {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(255, 184, 103, .7);
+      border-radius: 999px;
+      background: rgba(255, 184, 103, .18);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+      pointer-events: auto;
+    }
+
+    .dev-object[data-name="tape"] { left: 72%; top: 62%; }
+    .dev-object[data-name="pc"] { left: 16%; top: 42%; }
+    .dev-object[data-name="tv"] { left: 48%; top: 39%; }
+
+    .dev-panel {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 60;
+      width: min(460px, calc(100vw - 36px));
+      max-height: 48vh;
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 12px;
+      background: rgba(9, 10, 14, .76);
+      backdrop-filter: blur(6px);
+      box-shadow: 10px 14px 28px rgba(0, 0, 0, .38);
+    }
+
+    .dev-panel h1 {
+      margin: 0 0 10px;
+      color: #ffb867;
+      font: 22px/1 "VT323", ui-monospace, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .dev-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .dev-panel button {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: rgba(12, 13, 18, .82);
+      color: #efe9dc;
+      cursor: pointer;
+      font: 18px/1 "VT323", ui-monospace, monospace;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .dev-panel button:focus-visible {
+      outline: 2px solid #ffb867;
+      outline-offset: 3px;
+    }
+
+    .dev-log {
+      min-height: 92px;
+      margin: 0;
+      white-space: pre-wrap;
+      color: rgba(239, 233, 220, .78);
+      font-family: "Courier Prime", ui-monospace, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 700px) {
+      .dev-panel {
+        left: 10px;
+        right: 10px;
+        bottom: 72px;
+        width: auto;
+        max-height: 32vh;
+      }
+
+      .dev-object[data-name="tv"] { left: 48%; top: 34%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dev-stage" aria-hidden="true">
+    <div class="dev-vignette"></div>
+    <button class="dev-object" data-name="tape" aria-label="Hover tape target"></button>
+    <button class="dev-object" data-name="pc" aria-label="Hover computer target"></button>
+    <button class="dev-object" data-name="tv" aria-label="Hover television target"></button>
+  </div>
+
+  <div id="hud"></div>
+
+  <aside class="dev-panel" aria-label="HUD API controls">
+    <h1>HUD API Exerciser</h1>
+    <div class="dev-buttons">
+      <button data-route="home">route home</button>
+      <button data-route="about">route about</button>
+      <button data-route="work">route work</button>
+      <button data-route="posts">route posts</button>
+      <button data-route="online">route online</button>
+      <button id="toggle-visible">visible</button>
+      <button id="set-hint">hint</button>
+      <button id="set-back">back</button>
+      <button id="toggle-sound">sound</button>
+      <button id="show-tv">tv card</button>
+      <button id="show-tape">tape card</button>
+      <button id="show-cd">cd card</button>
+      <button id="show-post">post card</button>
+      <button id="show-message">message</button>
+      <button id="hide-card">hide card</button>
+      <button id="show-credits">credits</button>
+      <button id="show-toast">toast</button>
+      <button id="destroy">destroy</button>
+    </div>
+    <pre id="log" class="dev-log"></pre>
+  </aside>
+
+  <script type="module">
+    import content, { workItems } from '/js/content.js';
+    import { createHud } from '/js/ui/hud.js';
+
+    const root = document.getElementById('hud');
+    const logEl = document.getElementById('log');
+    const logs = [];
+    let hud;
+    let sound = false;
+    let visible = true;
+    let cdTimer = 0;
+    let cdState = {
+      artist: content.music.artist,
+      album: content.music.album,
+      tracks: content.music.tracks,
+      index: 0,
+      playing: true,
+      time: 42,
+      duration: 186,
+      volume: .72,
+    };
+
+    function log(type, payload) {
+      logs.unshift(`${new Date().toLocaleTimeString()} ${type} ${payload == null ? '' : JSON.stringify(payload)}`);
+      logs.length = Math.min(logs.length, 18);
+      logEl.textContent = logs.join('\n');
+    }
+
+    function mount() {
+      hud = createHud(root, {
+        content,
+        onNavigate(route) {
+          log('navigate', route);
+          hud.setRoute(route);
+          hud.showToast(`Route ${route}`);
+        },
+        onAction(name, payload) {
+          log('action', { name, payload });
+          if (name === 'sound') {
+            sound = !sound;
+            hud.setSound(sound);
+          }
+          if (name === 'credits-close') hud.showToast('Credits closed');
+          if (name === 'home') hud.setRoute('home');
+          if (name === 'back') hud.showToast('Back requested');
+          if (name === 'cd') handleCd(payload);
+        },
+      });
+      hud.setHint('C use computer · M use CD player · Z zoom TV · 1–6 monitor buttons');
+      hud.setBack('BACK TO THE DESK · ESC');
+    }
+
+    function handleCd(payload) {
+      if (payload.cmd === 'prev') cdState.index = (cdState.index + cdState.tracks.length - 1) % cdState.tracks.length;
+      if (payload.cmd === 'next') cdState.index = (cdState.index + 1) % cdState.tracks.length;
+      if (payload.cmd === 'toggle') cdState.playing = !cdState.playing;
+      if (payload.cmd === 'stop') { cdState.playing = false; cdState.time = 0; }
+      if (payload.cmd === 'volume') cdState.volume = payload.value;
+      hud.updateCard('cd', cdState);
+    }
+
+    function startCdTicker() {
+      window.clearInterval(cdTimer);
+      cdTimer = window.setInterval(() => {
+        if (!hud || !cdState.playing) return;
+        cdState.time = (cdState.time + 1) % cdState.duration;
+        hud.updateCard('cd', { time: cdState.time });
+      }, 1000);
+    }
+
+    mount();
+    startCdTicker();
+
+    document.querySelectorAll('[data-route]').forEach((button) => {
+      button.addEventListener('click', () => hud.setRoute(button.dataset.route));
+    });
+    document.getElementById('toggle-visible').addEventListener('click', () => {
+      visible = !visible;
+      hud.setVisible(visible);
+      window.setTimeout(() => { if (!visible) { visible = true; hud.setVisible(true); } }, 1200);
+    });
+    document.getElementById('set-hint').addEventListener('click', () => hud.setHint(Math.random() > .5 ? null : 'N show card · ESC back · Drag to look around'));
+    document.getElementById('set-back').addEventListener('click', () => hud.setBack(Math.random() > .5 ? null : 'PUT DOWN NOTEPAD · ESC'));
+    document.getElementById('toggle-sound').addEventListener('click', () => { sound = !sound; hud.setSound(sound); });
+    document.getElementById('show-tv').addEventListener('click', () => {
+      hud.showCard('tv', {
+        channel: 'CH 02',
+        title: 'Work tapes',
+        subtitle: 'Late-night index',
+        lines: ['Choose a tape from the desk to play a short programme.', 'Signal stable. Desk lamp reflection moderate.'],
+        actions: ['hide', 'home'],
+      });
+    });
+    document.getElementById('show-tape').addEventListener('click', () => {
+      hud.showCard('tape', { index: 5, item: workItems(content)[4], actions: ['eject', 'home'] });
+    });
+    document.getElementById('show-cd').addEventListener('click', () => hud.showCard('cd', cdState));
+    document.getElementById('show-post').addEventListener('click', () => hud.showCard('post', content.posts[0]));
+    document.getElementById('show-message').addEventListener('click', () => hud.showCard('message', { title: 'Signal note', text: 'The monitor is warming up. Expect a little drift around the edges.' }));
+    document.getElementById('hide-card').addEventListener('click', () => hud.hideCard());
+    document.getElementById('show-credits').addEventListener('click', () => hud.showCredits(true));
+    document.getElementById('show-toast').addEventListener('click', () => hud.showToast('Tape tracking adjusted'));
+    document.getElementById('destroy').addEventListener('click', () => {
+      window.clearInterval(cdTimer);
+      hud.destroy();
+      log('destroyed');
+    });
+
+    document.querySelectorAll('.dev-object').forEach((button) => {
+      const labels = { tape: 'TAPE · CLOUD LAB', pc: 'PC · VANTEC 286', tv: 'TV · LINE B' };
+      button.addEventListener('pointerenter', (event) => hud.showTooltip(labels[button.dataset.name], event.clientX, event.clientY));
+      button.addEventListener('pointermove', (event) => hud.showTooltip(labels[button.dataset.name], event.clientX, event.clientY));
+      button.addEventListener('pointerleave', () => hud.hideTooltip());
+      button.addEventListener('click', () => log('target', button.dataset.name));
+    });
+  </script>
+</body>
+</html>

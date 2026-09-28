@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audio soundboard</title>
+  <style>
+    body { margin: 0; background: #080910; color: #efe9dc; font: 15px/1.45 system-ui, sans-serif; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    h1, h2 { color: #ffb867; }
+    button, select, input { accent-color: #ffb867; }
+    button { margin: 3px; padding: 7px 10px; border: 1px solid #424552; border-radius: 8px; background: #151821; color: #efe9dc; cursor: pointer; }
+    button:hover { background: #202638; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    section { border: 1px solid #252a38; border-radius: 14px; padding: 14px; background: #10131b; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 2px; }
+    label { display: block; margin: 8px 0; }
+    meter { width: 100%; height: 18px; }
+    #status { color: #a9d6ff; }
+    .bad { color: #ff7676; }
+    .ok { color: #a8ffb0; }
+    code { color: #b9e3ff; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Audio soundboard</h1>
+  <p><button id="enable">Enable sound</button> <button id="disable">Disable</button> <span id="status">loading manifest…</span></p>
+  <meter id="meter" min="0" max="1" value="0"></meter>
+  <div class="grid">
+    <section>
+      <h2>SFX</h2>
+      <div id="sfx" class="buttons"></div>
+    </section>
+    <section>
+      <h2>Ambience scene</h2>
+      <label>Rain <input id="rain" type="range" min="0" max="1" step=".01" value=".55"></label>
+      <label>City <input id="city" type="range" min="0" max="1" step=".01" value=".35"></label>
+      <label>Room <input id="room" type="range" min="0" max="1" step=".01" value=".45"></label>
+      <label><input id="tvOn" type="checkbox"> TV on / CRT whine</label>
+      <label><input id="pcFan" type="checkbox"> PC fan</label>
+      <label><input id="cdSpin" type="checkbox"> CD spin</label>
+      <button id="sceneApply">Apply scene</button>
+      <button id="thunder">Thunder</button>
+    </section>
+    <section>
+      <h2>TV</h2>
+      <select id="tvLoop"></select>
+      <button id="tvPlay">Play loop</button>
+      <button id="tvStop">Stop</button>
+      <button data-once="tv_ident_jingle">Ident jingle</button>
+    </section>
+    <section>
+      <h2>CD transport</h2>
+      <p id="track">No track</p>
+      <button id="prev">Prev</button><button id="play">Play/pause</button><button id="next">Next</button>
+      <label>Volume <input id="musicVol" type="range" min="0" max="1" step=".01" value=".85"></label>
+    </section>
+    <section>
+      <h2>Listener view</h2>
+      <select id="view">
+        <option>home</option><option>tv</option><option>posts</option><option>pc</option><option>cd</option><option>work</option><option>credits</option>
+      </select>
+      <button id="viewApply">Apply</button>
+    </section>
+    <section>
+      <h2>Decode check</h2>
+      <pre id="decode"></pre>
+    </section>
+  </div>
+</main>
+<script type="module">
+  import { AudioEngine } from '../js/audio/engine.js';
+  const engine = new AudioEngine({ basePath: '../assets/audio/' });
+  const $ = (id) => document.getElementById(id);
+  await engine.init();
+  $('status').textContent = `manifest: ${Object.keys(engine.manifest).length} entries`;
+
+  const sfx = $('sfx');
+  const tvSel = $('tvLoop');
+  for (const [name, meta] of Object.entries(engine.manifest)) {
+    if (name.startsWith('_')) continue;
+    if (meta.group === 'sfx' || (!meta.loop && meta.group === 'amb')) {
+      const b = document.createElement('button');
+      b.textContent = name;
+      b.onclick = () => engine.play(name, { variant: true });
+      sfx.append(b);
+      for (const variant of meta.variants || []) {
+        const vb = document.createElement('button');
+        vb.textContent = variant;
+        vb.onclick = () => engine.play(variant);
+        sfx.append(vb);
+      }
+    }
+    if ((meta.group === 'tv' || name.startsWith('tape_loop')) && meta.loop) {
+      tvSel.append(new Option(name, name));
+    }
+  }
+
+  function applyScene() {
+    engine.setScene({
+      rain: +$('rain').value,
+      city: +$('city').value,
+      room: +$('room').value,
+      tvOn: $('tvOn').checked,
+      crtWhine: 1,
+      pcFan: $('pcFan').checked ? .8 : 0,
+      cdSpin: $('cdSpin').checked ? .6 : 0,
+    });
+  }
+
+  $('enable').onclick = async () => {
+    await engine.unlock();
+    engine.setEnabled(true);
+    applyScene();
+    $('status').textContent = 'enabled';
+  };
+  $('disable').onclick = () => { engine.setEnabled(false); $('status').textContent = 'disabled'; };
+  $('sceneApply').onclick = applyScene;
+  $('thunder').onclick = () => engine.thunder(0);
+  $('tvPlay').onclick = () => engine.tv.playLoop(tvSel.value, { fade: .5 });
+  $('tvStop').onclick = () => engine.tv.playLoop(null, { fade: .5 });
+  document.querySelector('[data-once]').onclick = (ev) => engine.tv.playOnce(ev.currentTarget.dataset.once);
+  $('prev').onclick = () => engine.music.prev();
+  $('play').onclick = () => engine.music.toggle();
+  $('next').onclick = () => engine.music.next();
+  $('musicVol').oninput = (ev) => engine.music.volume = +ev.target.value;
+  $('viewApply').onclick = () => engine.setListener($('view').value);
+  engine.music.onchange((s) => {
+    const mm = Math.floor(s.currentTime / 60);
+    const ss = String(Math.floor(s.currentTime % 60)).padStart(2, '0');
+    $('track').textContent = `${s.track?.title || 'No track'} · ${mm}:${ss} ${s.playing ? '▶' : 'Ⅱ'}`;
+  });
+
+  const decodePre = $('decode');
+  async function decodeAll() {
+    const ctx = new AudioContext();
+    let ok = 0, bad = 0;
+    for (const [name, meta] of Object.entries(engine.manifest)) {
+      if (name.startsWith('_') || !meta.file) continue;
+      try {
+        const res = await fetch(`../assets/audio/${meta.file}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await ctx.decodeAudioData(await res.arrayBuffer());
+        ok++;
+      } catch (err) {
+        bad++;
+        decodePre.textContent += `FAIL ${name}: ${err.message}\n`;
+      }
+    }
+    decodePre.textContent += `${ok} decoded, ${bad} failed`;
+    decodePre.className = bad ? 'bad' : 'ok';
+    await ctx.close();
+  }
+  decodeAll();
+
+  setInterval(() => {
+    const ctx = engine.context;
+    if (!ctx || !engine.master) return;
+    $('meter').value = Math.max(0, Math.min(1, engine.master.gain.value));
+  }, 100);
+</script>
+</body>
+</html>
+

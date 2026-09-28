@@ -1,6 +1,6 @@
 # LinkedIn publication provenance
 
-Reviewed 7 September 2026. Professional activity and featured projects below are supported by the owner's original LinkedIn posts, not repository descriptions.
+Reviewed 7 September 2026. Professional activity and featured projects below are supported by the owner's original LinkedIn posts, not repository descriptions. The portfolio is published at `/portfolio/`; the site root is the generated room website described in `room/README.md`.
 
 ## Publication boundary
 

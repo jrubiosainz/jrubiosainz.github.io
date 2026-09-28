@@ -1,0 +1,237 @@
+{
+ "encoding": "cbrt",
+ "atlases": {
+  "0": {
+   "groups": {
+    "amb": {
+     "file": "lm0_amb.webp",
+     "scale": 9.891406
+    },
+    "lamp": {
+     "file": "lm0_lamp.webp",
+     "scale": 26.090625
+    },
+    "tv": {
+     "file": "lm0_tv.webp",
+     "scale": 3.224805
+    }
+   },
+   "albedo": {
+    "file": "alb0.webp",
+    "res": 8192
+   }
+  },
+  "1": {
+   "groups": {
+    "amb": {
+     "file": "lm1_amb.webp",
+     "scale": 4.597656
+    },
+    "lamp": {
+     "file": "lm1_lamp.webp",
+     "scale": 0.176038
+    },
+    "tv": {
+     "file": "lm1_tv.webp",
+     "scale": 0.056195
+    }
+   },
+   "albedo": {
+    "file": "alb1.webp",
+    "res": 4096
+   }
+  }
+ },
+ "groups": [
+  "amb",
+  "lamp",
+  "tv"
+ ],
+ "res": 4096,
+ "tv_bake_strength": 6.0,
+ "lights": {
+  "BL_DoorGap": {
+   "type": "AREA",
+   "group": "amb",
+   "pos": [
+    0.6800000071525574,
+    -2.880000114440918,
+    0.012000000104308128
+   ],
+   "energy": 2.0,
+   "color": [
+    1.0,
+    0.800000011920929,
+    0.550000011920929
+   ]
+  },
+  "BL_FloorLampDown": {
+   "type": "SPOT",
+   "group": "amb",
+   "pos": [
+    0.9800000190734863,
+    -0.27000001072883606,
+    1.2899999618530273
+   ],
+   "energy": 30.0,
+   "color": [
+    1.0,
+    0.7400000095367432,
+    0.46000000834465027
+   ]
+  },
+  "BL_FloorLampUp": {
+   "type": "SPOT",
+   "group": "amb",
+   "pos": [
+    0.9800000190734863,
+    -0.27000001072883606,
+    1.5699999332427979
+   ],
+   "energy": 45.0,
+   "color": [
+    1.0,
+    0.7400000095367432,
+    0.46000000834465027
+   ]
+  },
+  "BL_Lamp": {
+   "type": "POINT",
+   "group": "lamp",
+   "pos": [
+    -0.3883815407752991,
+    0.1563536375761032,
+    1.0528557300567627
+   ],
+   "energy": 22.0,
+   "color": [
+    1.0,
+    0.7400000095367432,
+    0.5
+   ]
+  },
+  "BL_Window": {
+   "type": "AREA",
+   "group": "amb",
+   "pos": [
+    -0.07999999821186066,
+    0.8700000047683716,
+    1.600000023841858
+   ],
+   "energy": 30.0,
+   "color": [
+    0.6200000047683716,
+    0.699999988079071,
+    0.949999988079071
+   ]
+  },
+  "BL_WindowCity": {
+   "type": "AREA",
+   "group": "amb",
+   "pos": [
+    -0.07999999821186066,
+    1.1200000047683716,
+    1.149999976158142
+   ],
+   "energy": 30.0,
+   "color": [
+    1.0,
+    0.6600000262260437,
+    0.41999998688697815
+   ]
+  },
+  "TV_ScreenCenter": {
+   "pos": [
+    0.0,
+    0.07899999618530273,
+    1.0399999618530273
+   ],
+   "normal": [
+    0.0,
+    -1.0,
+    0.0
+   ]
+  },
+  "PC_ScreenCenter": {
+   "pos": [
+    -1.2130000591278076,
+    0.010000010021030903,
+    1.1009999513626099
+   ],
+   "normal": [
+    1.0,
+    4.371138828673793e-08,
+    0.0
+   ]
+  },
+  "Lamp_LightPos": {
+   "pos": [
+    -0.3883815407752991,
+    0.1563536375761032,
+    1.0528557300567627
+   ],
+   "normal": [
+    0.6156615018844604,
+    -0.7880107760429382,
+    0.0
+   ]
+  },
+  "Lamp_LightAim": {
+   "pos": [
+    -0.21788597106933594,
+    -0.11649623513221741,
+    0.782884955406189
+   ],
+   "normal": [
+    0.6156615018844604,
+    -0.7880107760429382,
+    0.0
+   ]
+  }
+ },
+ "combined": [
+  "Curtain_L",
+  "Curtain_L_Clip_1",
+  "Curtain_L_Clip_2",
+  "Curtain_L_Clip_3",
+  "Curtain_L_Clip_4",
+  "Curtain_L_Clip_5",
+  "Curtain_L_Clip_6",
+  "Curtain_L_Clip_7",
+  "Curtain_L_Clip_8",
+  "Curtain_L_Clip_9",
+  "Curtain_L_Hem",
+  "Curtain_L_Ring_1",
+  "Curtain_L_Ring_2",
+  "Curtain_L_Ring_3",
+  "Curtain_L_Ring_4",
+  "Curtain_L_Ring_5",
+  "Curtain_L_Ring_6",
+  "Curtain_L_Ring_7",
+  "Curtain_L_Ring_8",
+  "Curtain_L_Ring_9",
+  "Curtain_R",
+  "Curtain_R_Clip_1",
+  "Curtain_R_Clip_2",
+  "Curtain_R_Clip_3",
+  "Curtain_R_Clip_4",
+  "Curtain_R_Clip_5",
+  "Curtain_R_Clip_6",
+  "Curtain_R_Clip_7",
+  "Curtain_R_Hem",
+  "Curtain_R_Ring_1",
+  "Curtain_R_Ring_2",
+  "Curtain_R_Ring_3",
+  "Curtain_R_Ring_4",
+  "Curtain_R_Ring_5",
+  "Curtain_R_Ring_6",
+  "Curtain_R_Ring_7",
+  "Curtain_Rod",
+  "Curtain_Rod_Finial",
+  "Curtain_Rod_Finial.001",
+  "FloorLamp_Shade"
+ ],
+ "dynamic": {
+  "file": "dyn_albedo.webp"
+ }
+}

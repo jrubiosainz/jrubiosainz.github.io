@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jesús Rubio — Late Edition</title>
+    <link>https://jrubiosainz.github.io/posts/</link>
+    <atom:link href="https://jrubiosainz.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <description>Posts from Jesús Rubio&#39;s rainy-room website.</description>
+    <language>en</language>
+    <lastBuildDate>Mon, 28 Sep 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>How this room was built</title>
+      <link>https://jrubiosainz.github.io/posts/how-this-room-was-built/</link>
+      <guid isPermaLink="true">https://jrubiosainz.github.io/posts/how-this-room-was-built/</guid>
+      <pubDate>Mon, 28 Sep 2026 00:00:00 GMT</pubDate>
+      <description>Blender, Python, Cycles lightmaps, synthesised sound and a lot of shaders: the making of this website.</description>
+    </item>
+    <item>
+      <title>Microsoft AI Tour: AI at scale</title>
+      <link>https://es.linkedin.com/posts/jrubiosainz_microsoftaitour-activity-7429234235678285826-b2HH</link>
+      <guid isPermaLink="true">https://es.linkedin.com/posts/jrubiosainz_microsoftaitour-activity-7429234235678285826-b2HH</guid>
+      <pubDate>Mon, 16 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Session announcement for the Microsoft AI Tour on 26 February, together with Omar Mokrani Gallego: what it takes to run AI at scale on Azure.</description>
+    </item>
+    <item>
+      <title>A 3D RPG that talks back</title>
+      <link>https://www.linkedin.com/posts/jrubiosainz_github-copilot-custom-agents-unity-mcp-activity-7421279962546020352-IH7s</link>
+      <guid isPermaLink="true">https://www.linkedin.com/posts/jrubiosainz_github-copilot-custom-agents-unity-mcp-activity-7421279962546020352-IH7s</guid>
+      <pubDate>Sun, 25 Jan 2026 00:00:00 GMT</pubDate>
+      <description>GitHub Copilot custom agents, Unity MCP, Microsoft Foundry, Bing and Fabric, all in one little game. The characters answer questions about their world, the news and real data.</description>
+    </item>
+    <item>
+      <title>A desktop agent in two hours</title>
+      <link>https://www.linkedin.com/posts/jrubiosainz_yesterday-microsoft-released-copilot-sdk-activity-7420372024268591104-5U2B</link>
+      <guid isPermaLink="true">https://www.linkedin.com/posts/jrubiosainz_yesterday-microsoft-released-copilot-sdk-activity-7420372024268591104-5U2B</guid>
+      <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
+      <description>The Copilot SDK came out and I wondered whether a regular developer could build a desktop agent with it. Less than two hours later it was public on GitHub.</description>
+    </item>
+    <item>
+      <title>AI in health: past and future</title>
+      <link>https://colegioenfermeriaburgos.com/formacion/abierto-el-plazo-de-inscripcion-curso-inteligencia-artificial-para-enfermeria-inscripciones-hasta-el-23-noviembre</link>
+      <guid isPermaLink="true">https://colegioenfermeriaburgos.com/formacion/abierto-el-plazo-de-inscripcion-curso-inteligencia-artificial-para-enfermeria-inscripciones-hasta-el-23-noviembre</guid>
+      <pubDate>Wed, 10 Dec 2025 00:00:00 GMT</pubDate>
+      <description>Opening talk of a course on artificial intelligence for nurses at the Colegio de Enfermería de Burgos: evidence-based care, writing, images, video and data.</description>
+    </item>
+    <item>
+      <title>Maple Leaf, an AI short film</title>
+      <link>https://www.linkedin.com/posts/jrubiosainz_projectodyssey-aimovie-mapleleaf-activity-7280313215169814528-p4FV</link>
+      <guid isPermaLink="true">https://www.linkedin.com/posts/jrubiosainz_projectodyssey-aimovie-mapleleaf-activity-7280313215169814528-p4FV</guid>
+      <pubDate>Wed, 01 Jan 2025 00:00:00 GMT</pubDate>
+      <description>An original story turned into a short film with generative video, voice and music during 2024. The credits for every tool roll at the end.</description>
+    </item>
+    <item>
+      <title>Speaking at OGECON</title>
+      <link>https://es.linkedin.com/posts/jrubiosainz_ogecon-activity-7209994690199244801-XBiV</link>
+      <guid isPermaLink="true">https://es.linkedin.com/posts/jrubiosainz_ogecon-activity-7209994690199244801-XBiV</guid>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 GMT</pubDate>
+      <description>On stage in Burgos with FAE Burgos, Ibercaja and the University of Burgos, in front of 75 local companies, talking about how AI is changing every layer of work.</description>
+    </item>
+  </channel>
+</rss>

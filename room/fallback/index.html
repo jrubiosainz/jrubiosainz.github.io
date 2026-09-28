@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lite version — Jesús Rubio</title>
+  <meta name="description" content="A lite, no-WebGL version of Jesús Rubio&#39;s interactive room website.">
+  <link rel="stylesheet" href="../css/fonts.css">
+  <link rel="stylesheet" href="../css/posts.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="topline" aria-label="Site">
+      <a class="desk-link" href="../"><span>←</span> back to the desk</a>
+      <a href="../posts/">Posts archive</a>
+    </nav>
+
+    <header class="masthead fallback-hero">
+      <div>
+        <span class="kicker">Lite transmission / no WebGL required</span>
+        <h1 id="lite-name">Jesús Rubio</h1>
+        <p id="lite-intro" class="dek">Cloud Solution Architect for AI &amp; Apps at Microsoft. I like the space where engineering meets imagination: a film made with AI, a world that talks back, an app that does more than answer.</p>
+        <div class="edition-meta">
+          <span id="lite-location">Burgos, Spain</span>
+          <span>Text mode</span>
+          <span>Accessible edition</span>
+        </div>
+      </div>
+      <figure class="room-still">
+        <img src="../assets/images/room_home.webp" alt="Static render of the rainy room website home view." onerror="const frame=this.parentElement; this.remove(); frame.dataset.missing='true';">
+        <figcaption class="label">The desk, rendered from the live scene</figcaption>
+      </figure>
+    </header>
+
+    <section class="section-card" aria-labelledby="about-heading">
+      <h2 id="about-heading">About</h2>
+      <div id="about-text"></div>
+    </section>
+
+    <section aria-labelledby="work-heading">
+      <h2 id="work-heading">Work</h2>
+      <ul id="work-list" class="section-list"></ul>
+    </section>
+
+    <section aria-labelledby="posts-heading">
+      <h2 id="posts-heading">Posts</h2>
+      <div id="posts-list" class="archive-grid"></div>
+    </section>
+
+    <section aria-labelledby="online-heading">
+      <h2 id="online-heading">Online</h2>
+      <ul id="online-list" class="link-list"></ul>
+    </section>
+
+    <section class="section-card credits" aria-labelledby="credits-heading">
+      <h2 id="credits-heading">Credits</h2>
+      <div id="credits-list"></div>
+    </section>
+
+    <noscript>
+      <section class="section-card">
+        <h2>Static lite content</h2>
+        <p>JavaScript is disabled, so this page cannot import the shared content module. The essential links are still available: <a href="../posts/">posts</a>, <a href="../posts/how-this-room-was-built/">how this room was built</a>, and <a href="https://github.com/jrubiosainz">GitHub</a>.</p>
+      </section>
+    </noscript>
+  </main>
+
+  <script type="module">
+    import content, { workItems } from '../js/content.js';
+
+    const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[ch]);
+    const inlineLinks = (value) => escape(value).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => `<a href="${escape(url)}">${escape(label)}</a>`);
+    const paragraphs = (text) => String(text || '').split(/\n{2,}/).map((block) => {
+      if (block.startsWith('# ')) return `<h3>${escape(block.slice(2))}</h3>`;
+      return `<p>${inlineLinks(block)}</p>`;
+    }).join('');
+    const dateFmt = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    document.title = `Lite version — ${content.site.name}`;
+    document.documentElement.lang = content.site.lang || 'en';
+    document.getElementById('lite-name').textContent = content.site.name;
+    document.getElementById('lite-intro').textContent = content.site.intro;
+    const where = document.getElementById('lite-location');
+    where.textContent = content.site.location || '';
+    where.hidden = !content.site.location;
+    document.getElementById('about-text').innerHTML = paragraphs(content.about.text);
+
+    document.getElementById('work-list').replaceChildren(...workItems(content).map((item) => {
+      const li = document.createElement('li');
+      li.className = 'section-card';
+      const linkHref = (url) => (/^([a-z]+:|#|\/)/i.test(url) ? url : `../${url}`);
+      const links = item.links?.length ? `<ul class="link-list">${item.links.map((link) => `<li><a href="${escape(linkHref(link.url))}">${escape(link.label)}</a></li>`).join('')}</ul>` : '';
+      li.innerHTML = `<span class="label">${escape(item.group)}${item.years ? ` / ${escape(item.years)}` : ''}</span><h3>${escape(item.title)}</h3><p>${escape(item.description)}</p><p>${escape(item.body)}</p>${links}`;
+      return li;
+    }));
+
+    document.getElementById('posts-list').replaceChildren(...content.posts.map((post) => {
+      const article = document.createElement('article');
+      article.className = `post-card${post.url === '#' ? ' is-placeholder' : ''}`;
+      const external = /^[a-z]+:/i.test(post.url);
+      const href = external || post.url.startsWith('#') ? post.url : `../${post.url}`;
+      const attrs = external ? ' target="_blank" rel="noopener"' : '';
+      article.innerHTML = `<time class="post-date" datetime="${escape(post.date)}">${dateFmt.format(new Date(`${post.date}T00:00:00Z`)).replace(',', '')}</time><div><h3><a href="${escape(href)}"${attrs}>${escape(post.title)}${external ? ' ↗' : ''}</a></h3><p>${escape(post.excerpt)}</p></div>`;
+      return article;
+    }));
+
+    document.getElementById('online-list').replaceChildren(...content.online.links.map((link) => {
+      const li = document.createElement('li');
+      const href = /^([a-z]+:|#|\/)/i.test(link.url) ? link.url : `../${link.url}`;
+      li.innerHTML = `<a href="${escape(href)}">${escape(link.label)}</a> <span class="label">${escape(link.handle)}</span>`;
+      return li;
+    }));
+
+    document.getElementById('credits-list').innerHTML = `<ul class="section-list">${content.credits.lines.map((line) => `<li><strong>${escape(line.what)}:</strong> ${escape(line.who)}</li>`).join('')}</ul><p>${escape(content.credits.extra)}</p>`;
+  </script>
+</body>
+</html>

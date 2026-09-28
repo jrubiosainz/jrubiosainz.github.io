@@ -11,10 +11,14 @@ import { copy, identity, publications, professionalNotes, focusAreas, type Langu
 
 const { lang } = Astro.props as { lang: Language };
 const t = copy[lang];
-const canonical = `${identity.site}${lang === "es" ? "/es/" : "/"}`;
+const baseUrl = import.meta.env.BASE_URL;
+const withBase = (path: string) => `${baseUrl}${path.replace(/^\//, "")}`;
+const siteUrl = (path: string) => new URL(withBase(path), identity.site).href;
+const canonical = siteUrl(lang === "es" ? "/es/" : "/");
+const socialPreview = siteUrl(`/portrait-points-preview${lang === "es" ? "-es" : ""}.png`);
 const notes = [t.filmNote, t.worldNote, t.agentNote];
 const icons = ["orbit", "cloud", "command", "prism"];
-const labels = [t.about, t.approach, t.projects, t.contact];
+const labels = [t.about, t.approach, t.projects, t.contact, t.room];
 const ids = ["human", "systems", "projects", "connect"];
 ---
 <!doctype html>
@@ -26,28 +30,31 @@ const ids = ["human", "systems", "projects", "connect"];
     <title>{t.metaTitle}</title>
     <meta name="description" content={t.metaDescription} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="en" href={`${identity.site}/`} />
-    <link rel="alternate" hreflang="es" href={`${identity.site}/es/`} />
-    <link rel="alternate" hreflang="x-default" href={`${identity.site}/`} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang="en" href={siteUrl("/")} />
+    <link rel="alternate" hreflang="es" href={siteUrl("/es/")} />
+    <link rel="alternate" hreflang="x-default" href={siteUrl("/")} />
+    <link rel="icon" href={withBase("/favicon.svg")} type="image/svg+xml" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={t.metaTitle} />
     <meta property="og:description" content={t.metaDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={lang === "es" ? "es_ES" : "en_US"} />
-    <meta property="og:image" content={`${identity.site}/portrait-points-preview${lang === "es" ? "-es" : ""}.png`} />
+    <meta property="og:image" content={socialPreview} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={t.metaTitle} />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "Person", name: identity.name, url: identity.site, jobTitle: identity.role, worksFor: { "@type": "Organization", name: identity.organization }, sameAs: [identity.linkedin, identity.github] })} />
-    <script is:inline>
+    <meta name="twitter:image" content={socialPreview} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "Person", name: identity.name, url: siteUrl("/"), jobTitle: identity.role, worksFor: { "@type": "Organization", name: identity.organization }, sameAs: [identity.linkedin, identity.github] })} />
+    <script is:inline define:vars={{ baseUrl }}>
       try {
         const url = new URL(location.href);
         const explicit = url.searchParams.get("lang");
         if (explicit === "en" || explicit === "es") localStorage.setItem("portfolio-language", explicit);
         const navigation = performance.getEntriesByType("navigation")[0];
-        if (url.pathname === "/" && !explicit && navigation?.type !== "back_forward" && localStorage.getItem("portfolio-language") === "es") location.replace("/es/" + url.search + url.hash);
+        const basePath = new URL(baseUrl, location.origin).pathname;
+        const spanishPath = new URL("es/", new URL(baseUrl, location.origin)).pathname;
+        if (url.pathname === basePath && !explicit && navigation?.type !== "back_forward" && localStorage.getItem("portfolio-language") === "es") location.replace(spanishPath + url.search + url.hash);
         document.documentElement.dataset.motion = localStorage.getItem("portfolio-motion") === "off" || matchMedia("(prefers-reduced-motion: reduce)").matches ? "off" : "on";
       } catch { /* Preferences are optional; the static site and native links remain usable. */ }
     </script>
@@ -63,8 +70,8 @@ const ids = ["human", "systems", "projects", "connect"];
         <div class="locale-panel">
           <p class="eyebrow">{t.languageCommand}<span aria-hidden="true">_</span></p>
           <p class="locale-hint">{t.languageHint}</p>
-          <a href="/?lang=en" lang="en" hreflang="en" data-language="en" aria-current={lang === "en" ? "page" : undefined}><span>01</span>English<span aria-hidden="true">↗</span></a>
-          <a href="/es/" lang="es" hreflang="es" data-language="es" aria-current={lang === "es" ? "page" : undefined}><span>02</span>Español<span aria-hidden="true">↗</span></a>
+          <a href={withBase("/?lang=en")} lang="en" hreflang="en" data-language="en" aria-current={lang === "en" ? "page" : undefined}><span>01</span>English<span aria-hidden="true">↗</span></a>
+          <a href={withBase("/es/")} lang="es" hreflang="es" data-language="es" aria-current={lang === "es" ? "page" : undefined}><span>02</span>Español<span aria-hidden="true">↗</span></a>
         </div>
       </details>
     </div>
@@ -73,6 +80,7 @@ const ids = ["human", "systems", "projects", "connect"];
         <header class="site-header">
           <nav aria-label={t.nav}>
             {ids.map((id, index) => <a href={`#${id}`}>{labels[index]}</a>)}
+            <a href="/">{t.room}</a>
           </nav>
         </header>
         <div class="hero-title-wrap"><h1 class="chrome-type" id="hero-title">{t.hero}</h1></div>
@@ -81,7 +89,7 @@ const ids = ["human", "systems", "projects", "connect"];
           <div class="portrait-halo" aria-hidden="true"></div>
           <div class="portrait-scroll">
             <div class="portrait-magnet">
-              <img class="hero-portrait" src="/creator/portrait-points.png" alt={t.portraitAlt} width="1100" height="1300" fetchpriority="high" />
+              <img class="hero-portrait" src={withBase("/creator/portrait-points.png")} alt={t.portraitAlt} width="1100" height="1300" fetchpriority="high" />
             </div>
           </div>
           <span class="portrait-orbit orbit-one" aria-hidden="true">✳</span>
@@ -105,7 +113,7 @@ const ids = ["human", "systems", "projects", "connect"];
                 <div class="tile-caption"><span>{index === 0 ? "MAPLE LEAF" : index === 1 ? "3D AI RPG" : "DESKTOP ASSISTANT"}</span><span>↗</span></div>
               </div> : <div class:list={["marquee-tile", "concept-tile", `concept-${index}`]}>
                 <span class="eyebrow">{publication.tools[lang]}</span><strong>{index === 0 ? t.conceptFilm : index === 1 ? t.conceptWorld : t.conceptAgent}</strong>
-                <img src={`/creator/${icons[(index + 1) % icons.length]}.png`} alt="" width="500" height="500" loading="lazy" />
+                <img src={withBase(`/creator/${icons[(index + 1) % icons.length]}.png`)} alt="" width="500" height="500" loading="lazy" />
                 <span class="tile-serial">JRS / 0{index + 1}</span>
               </div>)}
             </div>)}
@@ -114,12 +122,12 @@ const ids = ["human", "systems", "projects", "connect"];
       </section>
 
       <section class="about-section" id="human" aria-labelledby="about-title" data-chapter>
-        {icons.map((icon, index) => <img class:list={["about-object", `about-object-${index + 1}`]} src={`/creator/${icon}.png`} alt="" aria-hidden="true" width="500" height="500" loading="lazy" />)}
+        {icons.map((icon, index) => <img class:list={["about-object", `about-object-${index + 1}`]} src={withBase(`/creator/${icon}.png`)} alt="" aria-hidden="true" width="500" height="500" loading="lazy" />)}
         <div class="about-content">
           <p class="eyebrow">{t.aboutKicker}</p>
           <h2 class="chrome-type section-heading" id="about-title">{t.aboutTitle}</h2>
           <p class="about-copy"><span class="sr-only">{t.aboutCopy}</span><span class="animated-text" aria-hidden="true">{t.aboutCopy.split(" ").map(word => <><span class="reveal-word">{[...word].map(char => <span class="reveal-char">{char}</span>)}</span>{" "}</>)}</span></p>
-          <div class="about-signature"><img src="/portrait.jpg" alt="" width="400" height="400" loading="lazy" /><span>{t.aboutSignature}<small>Jesús Rubio Sainz</small></span></div>
+          <div class="about-signature"><img src={withBase("/portrait.jpg")} alt="" width="400" height="400" loading="lazy" /><span>{t.aboutSignature}<small>Jesús Rubio Sainz</small></span></div>
           <a class="contact-pill" href={identity.linkedin}>{t.profile}<span aria-hidden="true">↗</span></a>
         </div>
       </section>
@@ -145,7 +153,7 @@ const ids = ["human", "systems", "projects", "connect"];
           {publications.map((publication, index) => <article class="project-card" id={publication.id} data-index={index} data-chapter style={`--index:${index}`} aria-labelledby={`${publication.id}-title`}>
             <div class="card-top"><span class="project-number" aria-hidden="true">0{index + 1}</span><div class="project-heading"><p class="eyebrow">{publication.kind[lang]}</p><h3 id={`${publication.id}-title`}>{index === 0 ? "Maple Leaf" : index === 1 ? "3D AI RPG" : "Desktop Assistant"}</h3></div><a class="ghost-pill" href={publication.url}>{t.publicationOpen}<span aria-hidden="true">↗</span></a></div>
             <div class="project-composition">
-              <div class="project-side"><div class:list={["project-concept", `concept-${index}`]}><span class="eyebrow">{t.editorialVisual}</span><strong>{notes[index]}</strong><img src={`/creator/${icons[(index + 1) % icons.length]}.png`} alt="" width="500" height="500" loading="lazy" /></div><p class="project-description">{publication.description[lang]}</p></div>
+              <div class="project-side"><div class:list={["project-concept", `concept-${index}`]}><span class="eyebrow">{t.editorialVisual}</span><strong>{notes[index]}</strong><img src={withBase(`/creator/${icons[(index + 1) % icons.length]}.png`)} alt="" width="500" height="500" loading="lazy" /></div><p class="project-description">{publication.description[lang]}</p></div>
               <figure class:list={["project-image", `image-${index}`]}><a href={publication.url} aria-label={`${t.publicationOpen}: ${publication.title[lang].replace("\n", " ")}`}><img src={publication.image.src} width={publication.image.width} height={publication.image.height} alt={publication.image.alt[lang]} loading="lazy" /></a><figcaption><span>{t.mediaSource}</span><time datetime={publication.date}>{new Intl.DateTimeFormat(lang === "es" ? "es-ES" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(publication.date))}</time></figcaption></figure>
             </div>
           </article>)}

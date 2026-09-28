@@ -1,0 +1,78 @@
+:root {
+  color-scheme: dark;
+  --bg: #07080d;
+  --ink: #efe9dc;
+  --amber: #ffb867;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Courier Prime", ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  cursor: grab;
+}
+
+.stage-canvas.is-dragging {
+  cursor: grabbing !important;
+}
+
+/* The canvas fades in from black once the first frames are ready (the loader sits on top meanwhile). */
+.stage-canvas {
+  opacity: 0;
+  transition: opacity 900ms ease 120ms;
+}
+
+.is-ready .stage-canvas {
+  opacity: 1;
+}
+
+/* Offscreen textarea that summons the on-screen keyboard for the computer on touch devices. */
+.pc-keyboard-proxy {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  resize: none;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.noscript {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  font: 20px/1.4 VT323, monospace;
+}
+
+.noscript a {
+  color: var(--amber);
+}

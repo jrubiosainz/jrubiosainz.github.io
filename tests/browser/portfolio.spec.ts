@@ -1,7 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
+const BASE = "/portfolio";
+const portfolioPath = (path = "/") => `${BASE}${path}`;
+
 async function ready(page: Page, path = "/") {
-  await page.goto(path);
+  await page.goto(portfolioPath(path));
   await expect(page.locator("html")).toHaveAttribute("data-experience", "ready");
 }
 
@@ -28,7 +31,7 @@ test("English is the first visit default and Jesús is the unmistakable identity
 test("The point portrait retains facial contrast, separated points and a transparent backdrop", async ({ page }) => {
   await ready(page);
   const portrait = page.locator(".hero-portrait");
-  await expect(portrait).toHaveAttribute("src", "/creator/portrait-points.png");
+  await expect(portrait).toHaveAttribute("src", portfolioPath("/creator/portrait-points.png"));
   await expect(portrait).toHaveAttribute("alt", /photograph.*silver points/);
   const regions = await portrait.evaluate(async (image: HTMLImageElement) => {
     await image.decode();
@@ -70,7 +73,7 @@ test("Only verified LinkedIn projects are featured, without template assets or e
   const external: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("response", response => { if (response.status() >= 400) failures.push(response.url()); });
-  page.on("request", request => { if (!request.url().startsWith("http://127.0.0.1:4322/")) external.push(request.url()); });
+  page.on("request", request => { if (!request.url().startsWith("http://127.0.0.1:4322/portfolio/")) external.push(request.url()); });
   await ready(page);
   for (const selector of [".about-section", ".focus-section", "#maple-leaf", "#ai-rpg", "#desktop-assistant"]) await place(page, selector);
   await expect(page.locator(".project-card")).toHaveCount(3);
@@ -168,16 +171,16 @@ test("Language console preserves the chapter, explicit preferences and browser b
   await ready(page, "/#systems");
   await page.locator(".locale-console summary").click();
   await page.locator("[data-language=es]").click();
-  await expect(page).toHaveURL(/\/es\/#systems$/);
+  await expect(page).toHaveURL(/\/portfolio\/es\/#systems$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await expect(page.locator("#focus-title")).toHaveText("MI ENFOQUE");
   await page.goBack();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/es\/$/);
-  await page.goto("/?lang=en");
+  await page.goto(portfolioPath("/"));
+  await expect(page).toHaveURL(/\/portfolio\/es\/$/);
+  await page.goto(portfolioPath("/?lang=en"));
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.goto("/es/#desktop-assistant");
+  await page.goto(portfolioPath("/es/#desktop-assistant"));
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
 });
 
@@ -191,9 +194,9 @@ test("No-JavaScript pages retain all text, portrait, project links and bilingual
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   for (const path of ["/", "/es/"]) {
-    await page.goto(path);
+    await page.goto(portfolioPath(path));
     await expect(page.locator(".hero-portrait")).toBeVisible();
-    await expect(page.locator(".hero-portrait")).toHaveAttribute("src", "/creator/portrait-points.png");
+    await expect(page.locator(".hero-portrait")).toHaveAttribute("src", portfolioPath("/creator/portrait-points.png"));
     await expect(page.locator(".hero-portrait")).toHaveAttribute("alt", path === "/" ? /photograph.*silver points/ : /Fotografía.*puntos plateados/);
     await expect(page.locator(".project-card")).toHaveCount(3);
     await expect(page.locator(".project-card").first()).toHaveCSS("position", "relative");

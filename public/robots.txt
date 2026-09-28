@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jrubiosainz.github.io/sitemap.xml
+Sitemap: https://jrubiosainz.github.io/portfolio/sitemap.xml

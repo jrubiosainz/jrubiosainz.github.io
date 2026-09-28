@@ -1,6 +1,6 @@
 # Jesús Rubio Sainz
 
-Personal portfolio at **https://jrubiosainz.github.io/**, with a complete Spanish edition at `/es/`.
+Personal portfolio at **https://jrubiosainz.github.io/portfolio/**, with a complete Spanish edition at `/portfolio/es/`. The site root, **https://jrubiosainz.github.io/**, is reserved for the generated 3D room website in `room/`; see `room/README.md`.
 
 A portrait-led creative-technologist site: oversized silver Kanit typography, a photograph encoded in silver points, opposing scroll-driven image bands, a progressively revealed introduction, a light professional-focus section and stacking project compositions.
 
@@ -18,7 +18,7 @@ npx playwright install chromium firefox
 npm run test:browser
 ```
 
-For a single engine, use `npm run test:browser -- --project=firefox` or `--project=chromium`. GitHub Actions runs both engines and deploys the static `dist/` directory from `main`. Only the deployment job has Pages write and OIDC permissions. There is no catch-all router; existing project Pages paths are not replaced.
+For a single engine, use `npm run test:browser -- --project=firefox` or `--project=chromium`. GitHub Actions runs both engines, then assembles `_site/` with generated room files at the root and the Astro `dist/` output under `_site/portfolio/`. Only the deployment job has Pages write and OIDC permissions. There is no catch-all router; existing project Pages paths are not replaced.
 
 `npm run portrait` generates `public/creator/portrait-points.png` locally from the authorized photograph using Playwright's Firefox and Canvas2D. It requires no running server. `BROWSER=chromium` selects Chromium instead.
 
@@ -44,7 +44,7 @@ Astro retains complete static HTML instead of introducing a React application me
 
 ## Accessibility and motion
 
-English is the first-visit default regardless of browser locale. The native language console persists explicit preferences, supports `/es/` and `/?lang=en`, preserves the current chapter and respects browser history.
+English is the first-visit default regardless of browser locale. The native language console persists explicit preferences, supports `/portfolio/es/` and `/portfolio/?lang=en`, preserves the current chapter and respects browser history.
 
 The portrait and all content are available without JavaScript. The screen-reader introduction is one normal paragraph; the character animation is decorative and hidden from assistive technology. OS reduced motion and the persistent motion-off control disable magnetic movement, scroll transforms, animated text and sticky stacking. Smaller or short viewports always use natural-flow project cards.
 

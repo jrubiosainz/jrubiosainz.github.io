@@ -1,0 +1,10 @@
+{
+  "navigationFallback": { "rewrite": "/index.html", "exclude": ["/assets/*", "/vendor/*", "/js/*", "/css/*", "/posts/*", "/fallback/*", "/dev/*", "*.xml"] },
+  "routes": [
+    { "route": "/assets/*", "headers": { "cache-control": "public, max-age=604800" } },
+    { "route": "/vendor/*", "headers": { "cache-control": "public, max-age=2592000, immutable" } },
+    { "route": "/dev/*", "statusCode": 404 }
+  ],
+  "mimeTypes": { ".xml": "application/rss+xml", ".glb": "model/gltf-binary", ".webp": "image/webp", ".mp3": "audio/mpeg", ".woff2": "font/woff2", ".wasm": "application/wasm" },
+  "globalHeaders": { "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin" }
+}
