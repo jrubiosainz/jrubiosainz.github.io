@@ -3,7 +3,7 @@ import { LIGHTS } from './materials.js';
 
 // ---------------------------------------------------------------------------------------------------------------
 // The "This is fine" diorama on the dresser (blender/lib/props_toys.py), shaped like the figurine with light-up
-// flames: a calm rubber duck having its coffee while laser-cut acrylic flames rise around it. Press it and the LEDs
+// flames: a clay Jesús sitting calmly by his coffee while laser-cut acrylic flames rise around him. Press it and the LEDs
 // in the base light the acrylic up (vibrant orange, hottest along the printed border band), the fire crackles and a
 // very calm voice says it's fine. Then it goes dark again. The flames are drawn here; their light on the dresser, the PC and the wall uses the room's live
 // point lights (materials.js).

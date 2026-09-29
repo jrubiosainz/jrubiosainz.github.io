@@ -254,7 +254,7 @@ The quickest way to reach me is a message on [LinkedIn](https://www.linkedin.com
       { what: 'The view outside', who: 'Jesús’s own photo of the ría, taken into a rainy night with Azure OpenAI' },
       { what: 'The poster', who: 'Burgos Cathedral, an original screen-print style illustration made with Azure OpenAI' },
       { what: 'Stack-chan', who: 'the open-source robot by Shinya Ishikawa (stack-chan project), as M5Stack’s StackChan, modelled here' },
-      { what: 'The diorama', who: 'shaped like the “This is fine” figurine (after the comic by KC Green), with an original rubber duck keeping calm' },
+      { what: 'The diorama', who: 'shaped like the “This is fine” figurine (after the comic by KC Green), with a clay Jesús keeping calm in the dog’s place' },
       { what: 'Rendering', who: 'three.js (MIT)' },
       { what: 'Type', who: 'Archivo, VT323, Caveat, Courier Prime and others (SIL Open Font License)' },
     ],

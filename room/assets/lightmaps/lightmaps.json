@@ -5,19 +5,19 @@
    "groups": {
     "amb": {
      "file": "lm0_amb.webp",
-     "scale": 9.908594
+     "scale": 9.925781
     },
     "lamp": {
      "file": "lm0_lamp.webp",
-     "scale": 26.340429
+     "scale": 26.125
     },
     "tv": {
      "file": "lm0_tv.webp",
-     "scale": 3.302148
+     "scale": 3.243724
     },
     "lampi": {
      "file": "lm0_lampi.webp",
-     "scale": 0.93833
+     "scale": 0.937793
     }
    },
    "albedo": {
@@ -29,11 +29,11 @@
    "groups": {
     "amb": {
      "file": "lm1_amb.webp",
-     "scale": 4.60625
+     "scale": 4.619141
     },
     "lamp": {
      "file": "lm1_lamp.webp",
-     "scale": 0.129376
+     "scale": 0.129242
     },
     "tv": {
      "file": "lm1_tv.webp",
@@ -41,7 +41,7 @@
     },
     "lampi": {
      "file": "lm1_lampi.webp",
-     "scale": 0.054181
+     "scale": 0.054349
     }
    },
    "albedo": {
