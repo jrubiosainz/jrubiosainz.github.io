@@ -13,9 +13,9 @@ const V = (p, t, fov) => ({ pos: new THREE.Vector3(...p), target: new THREE.Vect
 // the LOOK OUTSIDE view: camera, framing and how far you can turn your head (radians)
 export const LOOK_CAM = {
   pos: [0.26, 1.36, -0.37],
-  target: [0.169, 1.154, -1.667],
+  target: [0.205, 1.068, -1.635],     // nose near the glass, looking down 13° at the ría
   fov: 50,
-  look: { limitYaw: 0.55, limitUp: 0.3, limitDown: 0.45, spring: false, speed: 0.8 },
+  look: { limitYaw: 0.55, limitUp: 0.4, limitDown: 0.3, spring: false, speed: 0.8 },
 };
 
 export const CHANNELS = {

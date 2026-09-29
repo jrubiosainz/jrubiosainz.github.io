@@ -35,6 +35,7 @@ uniform vec2 uAzRange;
 uniform vec2 uElRange;
 uniform vec2 uPanoOffset;
 uniform vec2 uViewRotate;
+uniform float uViewShift;
 uniform vec4 uCarPaths[4];
 uniform float uCarSpeeds[4];
 uniform int uCarCount;
@@ -75,7 +76,12 @@ vec2 panoUvFromDir(vec3 d) {
 }
 
 
+// From a room ray to the panorama. The view is SHIFTED, not tilted: like a shift lens (or a film set's backdrop), the
+// city is moved down behind the window so that the ría shows from the desk, while its verticals stay vertical and
+// parallel to the window frame (a tilt made them converge: two perspectives in one frame). uViewShift = tan(shift);
+// the shear is relative to the window plane (outside is -z). uViewRotate: yaw, and an optional tilt (0).
 vec3 rotateSceneDir(vec3 d) {
+  d = vec3(d.x, d.y + uViewShift * d.z, d.z);
   float yaw = radians(uViewRotate.x);
   float lift = radians(-uViewRotate.y);
   float cy = cos(yaw);
@@ -498,6 +504,7 @@ uniform vec2 uAzRange;
 uniform vec2 uElRange;
 uniform vec2 uPanoOffset;
 uniform vec2 uViewRotate;
+uniform float uViewShift;
 varying vec2 vUv;
 varying vec3 vWorldPos;
 vec2 panoUvFromDir(vec3 d) {
@@ -507,6 +514,7 @@ vec2 panoUvFromDir(vec3 d) {
   return vec2((ae.x - uAzRange.x) / (uAzRange.y - uAzRange.x), (ae.y - uElRange.x) / (uElRange.y - uElRange.x));
 }
 vec3 rotateSceneDir(vec3 d) {
+  d = vec3(d.x, d.y + uViewShift * d.z, d.z);
   float yaw = radians(uViewRotate.x);
   float lift = radians(-uViewRotate.y);
   float cy = cos(yaw);
@@ -680,6 +688,19 @@ function buildBoats(river) {
   });
 }
 
+// How far the city is shifted down behind the window (tan of the angle), from where the camera is. From the desk (far
+// from the glass) the full shift brings the ría into view; leaning on the glass (LOOK OUTSIDE) there is none, and the
+// view is the photo's own perspective. In between it eases, so flying to the window the city settles into place.
+const GLASS_Z = -0.82;           // the window glass (three.js z; blender/lib/layout.py ROOM win_frame_y)
+const SHIFT_NEAR = 0.7;          // metres from the glass: no shift
+const SHIFT_FAR = 1.6;           // metres from the glass: the full shift
+function viewShift(meta, camera) {
+  const deg = meta.view?.shift ?? 0;
+  if (!deg) return 0;
+  const d = Math.max(0, camera.position.z - GLASS_Z);
+  return Math.tan(THREE.MathUtils.degToRad(deg * smooth(SHIFT_NEAR, SHIFT_FAR, d)));
+}
+
 export async function createWindowView({
   renderer,
   basePath = DEFAULT_BASE,
@@ -721,6 +742,7 @@ export async function createWindowView({
     uElRange: { value: new THREE.Vector2(meta.elevation?.[0] ?? -50, meta.elevation?.[1] ?? 45) },
     uPanoOffset: { value: new THREE.Vector2(0, 0) },
     uViewRotate: { value: new THREE.Vector2(meta.view?.yaw ?? 0, meta.view?.lift ?? 0) },
+    uViewShift: { value: Math.tan(THREE.MathUtils.degToRad(meta.view?.shift ?? 0)) },
     uCarPaths: { value: cars.paths },
     uCarSpeeds: { value: cars.speeds },
     uCarCount: { value: cars.count },
@@ -862,7 +884,7 @@ export async function createWindowView({
         lightning = Math.max(0, lightning - Math.max(dt, 1 / 120) * 4.6);
       }
       uniforms.uLightning.value = lightning * (0.65 + 0.35 * Math.sin(time * 74.0));
-      if (camera) material.uniformsNeedUpdate = false;
+      if (camera) uniforms.uViewShift.value = viewShift(meta, camera);
     },
     // someone is looking out: make sure something happens soon (a boat, and now and then a flash)
     lookingOut(on, time) {
@@ -921,7 +943,8 @@ export async function createWindowViewFallback({ basePath = DEFAULT_BASE, render
       uAzRange: { value: new THREE.Vector2(meta.azimuth?.[0] ?? -55, meta.azimuth?.[1] ?? 35) },
       uElRange: { value: new THREE.Vector2(meta.elevation?.[0] ?? -50, meta.elevation?.[1] ?? 45) },
       uPanoOffset: { value: new THREE.Vector2(0, 0) },
-    uViewRotate: { value: new THREE.Vector2(meta.view?.yaw ?? 0, meta.view?.lift ?? 0) },
+      uViewRotate: { value: new THREE.Vector2(meta.view?.yaw ?? 0, meta.view?.lift ?? 0) },
+      uViewShift: { value: Math.tan(THREE.MathUtils.degToRad(meta.view?.shift ?? 0)) },
     },
     toneMapped: false,
     depthWrite: false,
@@ -929,7 +952,7 @@ export async function createWindowViewFallback({ basePath = DEFAULT_BASE, render
   return {
     material,
     meta,
-    update() {},
+    update(time, dt, camera) { if (camera) material.uniforms.uViewShift.value = viewShift(meta, camera); },
     setRain() {},
     flash() {},
     dispose() {

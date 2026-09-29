@@ -1,124 +1,125 @@
 {
-  "projection": "equirect",
-  "capture": [
-    -0.08,
-    1.1,
-    1.55
+ "projection": "equirect",
+ "capture": [
+  -0.08,
+  1.1,
+  1.55
+ ],
+ "capture_three": [
+  -0.08,
+  1.55,
+  -1.1
+ ],
+ "azimuth": [
+  -66.0,
+  40.0
+ ],
+ "elevation": [
+  -46.0,
+  64.0
+ ],
+ "source": {
+  "file": "tools/window-src/ria_night_wide.png",
+  "original": "tools/window-src/ria_original.png",
+  "cleaned": "tools/window-src/ria_clean.png",
+  "night_edit": "tools/window-src/ria_night.png",
+  "wide_mask": "tools/window-src/ria_night_wide_mask.png",
+  "description": "Jesús Rubio home ría photo edited to rainy night and widened with Azure OpenAI gpt-image; originals are git-ignored.",
+  "hfov": 89.67,
+  "vfov": 52.86,
+  "focal_px": 1545.0,
+  "optical_center_px": [
+   1541.0,
+   767.0
   ],
-  "capture_three": [
-    -0.08,
-    1.55,
-    -1.1
+  "center_az": -1.5,
+  "center_el": -13.0,
+  "generated": "Azure OpenAI gpt-image-2.5-flare edit + outpaint, then deterministic projection/tone/masks.",
+  "regen": {
+   "command_a": ".venv/bin/python tools/genimage.py tools/window-src/ria_night.png <prompt-a> --edit tools/window-src/ria_clean.png --size 2048x1536",
+   "prompt_a": "Edit this exact photograph into the same view at night, during steady light rain. Keep the exact same camera position, framing, field of view and perspective, and keep every building, the arched footbridge, the river channel, the embankments, the pontoon, trees, street lamps, the dark office building with its lit windows and the flat roof with solar panels exactly where they are; do not add, remove or move any structure. Night look: the sky is low overcast rain clouds lit warm orange-brown from below by the city glow, darker towards the top, no stars and no moon, the distant hills are dark silhouettes fading into rain haze. The river is dark and wet with long vertical rippled reflections of the street lamps and of the bridge lights. The footbridge's LED strips along its arches glow magenta-pink and violet with a soft bloom. Apartment and office windows lit warm yellow in a realistic scattered pattern; sodium street lamps with soft halos along the embankments and the promenade; wet reflective pavements; faint rain streaks and mist in the distance. Photorealistic, like a night photo taken with a phone from the same window, natural noise, no text, no people added.",
+   "command_b": ".venv/bin/python tools/genimage.py tools/window-src/ria_night_wide.png <prompt-b> --edit tools/window-src/ria_night_wide_seed.png --mask tools/window-src/ria_night_wide_mask.png --size 3072x1536",
+   "prompt_b": "Outpaint this rainy night photograph to the left and to the right so it becomes one seamless wider photo taken from the same window with the same camera. Keep the central area exactly as it is. On the left, continue the city: more apartment blocks with warm lit windows, wet streets with sodium street lamps and the stone embankment and dark water of the river continuing towards the bottom left. On the right, continue the promenade with wet pavement, trees and street lamps, and the white warehouse building with its flat roof and solar panels continuing the same perspective, plus more buildings with lit windows further away. Same low orange-brown rain clouds, same light, same rain and haze, photorealistic, no text."
+  }
+ },
+ "view": {
+  "lift": 0.0,
+  "yaw": -1.0,
+  "shift": 13.0
+ },
+ "look_cam": {
+  "pos": [
+   0.26,
+   1.36,
+   -0.37
   ],
-  "azimuth": [
-    -66.0,
-    40.0
+  "target": [
+   0.205,
+   1.068,
+   -1.635
   ],
-  "elevation": [
-    -46.0,
-    64.0
-  ],
-  "source": {
-    "file": "tools/window-src/ria_night_wide.png",
-    "original": "tools/window-src/ria_original.png",
-    "cleaned": "tools/window-src/ria_clean.png",
-    "night_edit": "tools/window-src/ria_night.png",
-    "wide_mask": "tools/window-src/ria_night_wide_mask.png",
-    "description": "Jes\u00fas Rubio home r\u00eda photo edited to rainy night and widened with Azure OpenAI gpt-image; originals are git-ignored.",
-    "hfov": 89.67,
-    "vfov": 52.86,
-    "focal_px": 1545.0,
-    "optical_center_px": [
-      1541.0,
-      767.0
+  "fov": 50,
+  "look": {
+   "limitYaw": 0.35,
+   "limitUp": 0.4,
+   "limitDown": 0.3,
+   "spring": false,
+   "speed": 0.8
+  }
+ },
+ "width": 8192,
+ "height": 4608,
+ "mobile_width": 4096,
+ "mobile_height": 2304,
+ "aviation": [],
+ "cars": [
+  {
+   "path": [
+    [
+     -41.85,
+     -5.22
     ],
-    "center_az": -1.5,
-    "center_el": -13.0,
-    "generated": "Azure OpenAI gpt-image-2.5-flare edit + outpaint, then deterministic projection/tone/masks.",
-    "regen": {
-      "command_a": ".venv/bin/python tools/genimage.py tools/window-src/ria_night.png <prompt-a> --edit tools/window-src/ria_clean.png --size 2048x1536",
-      "prompt_a": "Edit this exact photograph into the same view at night, during steady light rain. Keep the exact same camera position, framing, field of view and perspective, and keep every building, the arched footbridge, the river channel, the embankments, the pontoon, trees, street lamps, the dark office building with its lit windows and the flat roof with solar panels exactly where they are; do not add, remove or move any structure. Night look: the sky is low overcast rain clouds lit warm orange-brown from below by the city glow, darker towards the top, no stars and no moon, the distant hills are dark silhouettes fading into rain haze. The river is dark and wet with long vertical rippled reflections of the street lamps and of the bridge lights. The footbridge's LED strips along its arches glow magenta-pink and violet with a soft bloom. Apartment and office windows lit warm yellow in a realistic scattered pattern; sodium street lamps with soft halos along the embankments and the promenade; wet reflective pavements; faint rain streaks and mist in the distance. Photorealistic, like a night photo taken with a phone from the same window, natural noise, no text, no people added.",
-      "command_b": ".venv/bin/python tools/genimage.py tools/window-src/ria_night_wide.png <prompt-b> --edit tools/window-src/ria_night_wide_seed.png --mask tools/window-src/ria_night_wide_mask.png --size 3072x1536",
-      "prompt_b": "Outpaint this rainy night photograph to the left and to the right so it becomes one seamless wider photo taken from the same window with the same camera. Keep the central area exactly as it is. On the left, continue the city: more apartment blocks with warm lit windows, wet streets with sodium street lamps and the stone embankment and dark water of the river continuing towards the bottom left. On the right, continue the promenade with wet pavement, trees and street lamps, and the white warehouse building with its flat roof and solar panels continuing the same perspective, plus more buildings with lit windows further away. Same low orange-brown rain clouds, same light, same rain and haze, photorealistic, no text."
-    }
+    [
+     -27.18,
+     -6.49
+    ]
+   ],
+   "speed": 0.02,
+   "color": "warm"
   },
-  "view": {
-    "lift": 17.0,
-    "yaw": -1.0
-  },
-  "look_cam": {
-    "pos": [
-      0.26,
-      1.36,
-      -0.37
+  {
+   "path": [
+    [
+     -27.23,
+     -6.99
     ],
-    "target": [
-      0.203,
-      1.451,
-      -1.666
+    [
+     -41.68,
+     -5.51
+    ]
+   ],
+   "speed": 0.018,
+   "color": "red"
+  },
+  {
+   "path": [
+    [
+     19.01,
+     -5.71
     ],
-    "fov": 50,
-    "look": {
-      "limitYaw": 0.35,
-      "limitUp": 0.3,
-      "limitDown": 0.3,
-      "spring": false,
-      "speed": 0.8
-    }
-  },
-  "width": 8192,
-  "height": 4608,
-  "mobile_width": 4096,
-  "mobile_height": 2304,
-  "aviation": [],
-  "cars": [
-    {
-      "path": [
-        [
-          -41.85,
-          -5.22
-        ],
-        [
-          -27.18,
-          -6.49
-        ]
-      ],
-      "speed": 0.02,
-      "color": "warm"
-    },
-    {
-      "path": [
-        [
-          -27.23,
-          -6.99
-        ],
-        [
-          -41.68,
-          -5.51
-        ]
-      ],
-      "speed": 0.018,
-      "color": "red"
-    },
-    {
-      "path": [
-        [
-          19.01,
-          -5.71
-        ],
-        [
-          35.78,
-          -4.71
-        ]
-      ],
-      "speed": 0.012,
-      "color": "warm"
-    }
-  ],
-  "water": {
-    "texture": "city_water.webp",
-    "mobile_texture": "city_water_m.webp",
-    "class": "visible r\u00eda water and basin; bridge deck/embankments/pontoons excluded"
-  },
-  "lights": "city_lights: R lamps/windows, G footbridge LEDs, B flicker phase (intensities, filter-safe)"
+    [
+     35.78,
+     -4.71
+    ]
+   ],
+   "speed": 0.012,
+   "color": "warm"
+  }
+ ],
+ "water": {
+  "texture": "city_water.webp",
+  "mobile_texture": "city_water_m.webp",
+  "class": "visible ría water and basin; bridge deck/embankments/pontoons excluded"
+ },
+ "lights": "city_lights: R lamps/windows, G footbridge LEDs, B flicker phase (intensities, filter-safe)"
 }
