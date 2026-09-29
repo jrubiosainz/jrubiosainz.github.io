@@ -2,17 +2,17 @@ import * as THREE from 'three';
 import { LIGHTS } from './materials.js';
 
 // ---------------------------------------------------------------------------------------------------------------
-// The "This is fine" diorama on the dresser (blender/lib/props_toys.py): a calm rubber duck having its coffee while
-// laser-cut acrylic flames rise around it. Press it and the LEDs in the base light the acrylic up (vibrant orange,
-// hot at the cut edges and the engraving), the fire crackles and a very calm voice says it's fine. Then it goes
-// dark again. The flames are drawn here; their light on the dresser, the PC and the wall uses the room's live
+// The "This is fine" diorama on the dresser (blender/lib/props_toys.py), shaped like the figurine with light-up
+// flames: a calm rubber duck having its coffee while laser-cut acrylic flames rise around it. Press it and the LEDs
+// in the base light the acrylic up (vibrant orange, hottest along the printed border band), the fire crackles and a
+// very calm voice says it's fine. Then it goes dark again. The flames are drawn here; their light on the dresser, the PC and the wall uses the room's live
 // point lights (materials.js).
 // ---------------------------------------------------------------------------------------------------------------
 const FLAMES = ['Fine_Flame_Back', 'Fine_Flame_Left', 'Fine_Flame_Right'];
 const SHOW = { ramp: 0.22, voice: 1.05, hold: 6.2, fade: 0.9 };
 
 function flameMaterial({ height, line }) {
-  return new THREE.ShaderMaterial({
+  const m = new THREE.ShaderMaterial({
     uniforms: {
       uOn: { value: 0 }, uH: { value: height }, uLine: { value: line ? 1 : 0 }, uPlaneN: { value: new THREE.Vector3(0, 0, 1) },
       uLampK: LIGHTS.lampK, uAmbK: LIGHTS.ambK, uLampPos: LIGHTS.lampPos, uHover: { value: 0 },
@@ -32,13 +32,14 @@ function flameMaterial({ height, line }) {
         float h = clamp(vY / uH, 0.0, 1.0);
         // the cut edges of the sheet (normals in its plane) and the engraved line catch the light
         float edge = max(1.0 - abs(dot(N, uPlaneN)), uLine);
-        // off: amber acrylic in a dim room, a little sheen from the lamp. The tone mapper turns saturated orange toward
-        // yellow, so the pigment leans red to read as the toy's orange
-        vec3 amber = vec3(1.0, 0.3, 0.035);
+        // off: pale amber acrylic with a saturated orange border band (the printed edge of the figurine's flames) in a
+        // dim room, a little sheen from the lamp. The tone mapper turns saturated orange toward yellow, so the pigments
+        // lean red
+        vec3 amber = mix(vec3(1.0, 0.62, 0.16), vec3(1.0, 0.36, 0.04), edge);
         vec3 L = normalize(uLampPos - vP);
         float sheen = pow(max(dot(N, normalize(L + V)), 0.0), 80.0) * uLampK * 0.25;
         float fr = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-        vec3 off = amber * (0.012 * uAmbK + 0.03 * uLampK) * (0.7 + 0.8 * edge) + vec3(1.0, 0.75, 0.5) * (sheen + fr * 0.01);
+        vec3 off = amber * (0.032 * uAmbK + 0.05 * uLampK) * (0.9 + 0.6 * edge) + vec3(1.0, 0.75, 0.5) * (sheen + fr * 0.01);
         // on: LEDs under the base feed the sheet from below; vibrant orange, deeper toward the tips. The peak stays low
         // enough that the tone mapper keeps it orange (brighter bleaches to yellow-white); bloom does the halo.
         vec3 hot = mix(vec3(1.0, 0.11, 0.0), vec3(1.0, 0.06, 0.0), h);
@@ -50,6 +51,9 @@ function flameMaterial({ height, line }) {
     side: THREE.DoubleSide,
     toneMapped: false,
   });
+  // the printed band lies a hair above the sheet: keep it in front of it from across the room
+  if (line) Object.assign(m, { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  return m;
 }
 
 export class FineToy {

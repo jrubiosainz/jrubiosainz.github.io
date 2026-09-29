@@ -133,7 +133,9 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   // Stack-chan: its base, and its head (the head's proxy rides on the tilt servo, so it follows the head)
   if (stack) {
     const info = { label: 'STACK-CHAN', action: 'stackchan' };
-    picker.addProxy('stackchan', stack.root, new THREE.BoxGeometry(0.056, 0.03, 0.046), info, new THREE.Vector3(0, 0.015, 0));
+    const bb = stack.rig.base_box || { center: [0, 0, 0.015], size: [0.056, 0.046, 0.03] };
+    picker.addProxy('stackchan', stack.root, new THREE.BoxGeometry(bb.size[0], bb.size[2], bb.size[1]), info,
+      new THREE.Vector3(bb.center[0], bb.center[2], -bb.center[1]));
     const hb = stack.rig.head_box;
     const hc = new THREE.Vector3(hb.center[0], hb.center[2], -hb.center[1]);
     const tp = new THREE.Vector3(stack.rig.tilt_pivot[0], stack.rig.tilt_pivot[2], -stack.rig.tilt_pivot[1]);

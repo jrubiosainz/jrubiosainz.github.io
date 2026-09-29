@@ -4,10 +4,11 @@ import { DRACOLoader } from '../../vendor/three/addons/loaders/DRACOLoader.js';
 import { dynamicMaterial, LIGHTS } from './materials.js';
 
 // ---------------------------------------------------------------------------------------------------------------
-// Stack-chan, the little open-source robot by Shinya Ishikawa (github.com/stack-chan/stack-chan): an M5Stack whose
-// screen is the face, on two hobby servos (pan in the base, tilt in the neck). It sits where the VCR remote was.
+// Stack-chan, the little open-source robot by Shinya Ishikawa (github.com/stack-chan/stack-chan), here as M5Stack's
+// StackChan: a CoreS3 whose screen is the face, a cube of a head on two feedback servos (pan in the base, tilt in the
+// neck) and two rows of RGB LEDs behind the teal light pipes on its top side edges. It sits where the VCR remote was.
 // Switched on (click, or S) it boots, raises its head and follows the pointer with head and eyes; scratch its head
-// (rub the pointer back and forth over it) and it smiles; click it while it is on and its LED bars light up, and
+// (rub the pointer back and forth over it) and it smiles; click it while it is on and its light pipes light up, and
 // the mouse wheel runs them round the colour wheel (blue, green, yellow, red…). Model: blender/stackchan/.
 //
 // Robot frame (rig.json): X right, Y back, Z up, face toward -Y. three.js: (x, y, z)robot -> (x, z, -y).
@@ -19,8 +20,6 @@ const clamp = THREE.MathUtils.clamp;
 const toThree = (v) => new THREE.Vector3(v[0], v[2], -v[1]);
 const ease = (t) => t * t * (3 - 2 * t);
 const PAN = 85 * DEG;
-const TILT_UP = -24 * DEG;
-const TILT_DOWN = 18 * DEG;
 const SERVO = 5.2;                   // rad/s: an SG90 with a load, a little slower than its data sheet
 const HUE_STEP = 15;
 const PALETTE = [225, 120, 60, 0, 300, 180];     // touch: blue, green, yellow, red, magenta, cyan
@@ -28,8 +27,11 @@ const COLOURS = [
   [0, 'RED'], [18, 'ORANGE'], [40, 'AMBER'], [58, 'YELLOW'], [85, 'LIME'], [120, 'GREEN'], [155, 'MINT'],
   [180, 'CYAN'], [200, 'SKY'], [225, 'BLUE'], [255, 'INDIGO'], [280, 'VIOLET'], [305, 'MAGENTA'], [330, 'PINK'],
 ];
-const LOOK = { stack_shell: [0.35, 0.8], stack_neck: [0.3, 0.6], stack_disc: [0.35, 0.6], stack_dark: [0.4, 0.5],
-  stack_glass: [1.6, 0.35], stack_button: [0.5, 0.3] };
+// how the materials read under the lamp: [specular, rim]
+const LOOK = { stack_bezel: [0.45, 0.8], stack_shell: [0.35, 0.8], stack_neck: [0.3, 0.6], stack_dark: [0.35, 0.5],
+  stack_ring: [0.4, 0.4], stack_hole: [0.1, 0.1], stack_glass: [1.8, 0.35], stack_label: [0.3, 0.5],
+  stack_ink: [0.2, 0.2], stack_cam: [1.0, 0.3], stack_lens: [1.5, 0.2], stack_teal: [0.5, 0.4],
+  stack_red: [0.3, 0.2], stack_button: [0.5, 0.3] };
 
 export function colourName(h) {
   const hue = ((h % 360) + 360) % 360;
@@ -88,10 +90,10 @@ function ledMaterial() {
       uniform vec3 uColor; uniform float uLevel; uniform float uLampK; uniform float uAmbK;
       varying vec3 vN; varying vec3 vP;
       void main() {
-        // milky diffuser: dim when off, the LEDs' colour glowing through when on (hotter at the centre line)
-        vec3 off = vec3(0.62, 0.62, 0.6) * (0.03 * uAmbK + 0.1 * uLampK);
+        // teal translucent light pipe: dim when off, the LEDs' colour glowing through when on
+        vec3 off = vec3(0.3, 0.6, 0.62) * (0.03 * uAmbK + 0.1 * uLampK);
         vec3 glow = uColor * uLevel * 5.0 + mix(uColor, vec3(1.0), 0.35) * uLevel * 2.0;
-        gl_FragColor = vec4(off + glow, 1.0);
+        gl_FragColor = vec4(off * (1.0 - uLevel * 0.8) + glow, 1.0);
       }`,
     toneMapped: false,
   });
@@ -100,6 +102,7 @@ function ledMaterial() {
 export class Stackchan {
   constructor(rig, scene) {
     this.rig = rig;
+    this.tiltRange = rig.tilt_range || [-16 * DEG, 8 * DEG];     // the cube head clears the neck within these
     this.root = new THREE.Group();
     this.root.name = 'Stackchan_Root_Runtime';
     this.root.position.set(STACK_SPOT.x, STACK_SPOT.y, STACK_SPOT.z);
@@ -146,10 +149,13 @@ export class Stackchan {
           useAtlas: false, color: src.color, rough: src.roughness ?? 0.5, spec, metal: src.metalness ?? 0,
           ambient: new THREE.Color(0.05, 0.04, 0.034),
         });
-        m.uniforms.uLampPower.value = 0.22;
-        m.uniforms.uTvPower.value = 0.02;
-        m.uniforms.uSpill.value = 0.012;
+        // calibrated against the baked mug next to it: the lamp's pool (it stands at the edge of the cone), the TV and
+        // the window's bounce off the desk reach its sides too
+        m.uniforms.uLampPower.value = 0.26;
+        m.uniforms.uTvPower.value = 0.03;
+        m.uniforms.uSpill.value = 0.03;
         m.uniforms.uPointK.value = 0.6;
+        m.uniforms.uAmbient.value.setRGB(0.09, 0.068, 0.052);
         m.uniforms.uRim.value.setRGB(0.05, 0.036, 0.03).multiplyScalar(rim);
         m.name = `live_${src.name}`;
         mats.set(src, m);
@@ -281,7 +287,7 @@ export class Stackchan {
       const horiz = Math.hypot(local.x, local.z);
       let tilt = -Math.atan2(local.y - tp.y, Math.max(horiz, 0.02));
       pan = clamp(pan, -PAN, PAN);
-      tilt = clamp(tilt, TILT_UP, TILT_DOWN);
+      tilt = clamp(tilt, this.tiltRange[0], this.tiltRange[1]);
       this.pan.target = pan;
       this.tilt.target = tilt;
     } else if (awake) {
@@ -289,12 +295,12 @@ export class Stackchan {
       if (this.time > this.idleAt) {
         this.idleAt = this.time + 2.5 + Math.random() * 3.5;
         this.pan.target = (Math.random() - 0.5) * 70 * DEG;
-        this.tilt.target = this.rig.awake_tilt + (Math.random() - 0.6) * 14 * DEG;
+        this.tilt.target = clamp(this.rig.awake_tilt + (Math.random() - 0.6) * 14 * DEG, this.tiltRange[0], this.tiltRange[1]);
       }
     }
     if (this.happy > 0 && awake) {
       // leans into the scratch
-      this.tilt.target = Math.min(this.tilt.target, -10 * DEG);
+      this.tilt.target = Math.max(this.tiltRange[0], Math.min(this.tilt.target, -10 * DEG));
       this.pan.target += Math.sin(this.time * 9) * 5 * DEG;
     }
     // servo: speed-limited, eased at the end of each move
@@ -362,8 +368,8 @@ export class Stackchan {
     this.ledMat.uniforms.uLevel.value = this.led.level;
     const p = LIGHTS.pointPos.value[0];
     const c = LIGHTS.pointCol.value[0];
-    this.headCenter(this._v);
-    p.set(this._v.x, this._v.y - 0.01, this._v.z, 0.035);
+    this._onHead(this.rig.led_light || this.rig.head_top, this._v);
+    p.set(this._v.x, this._v.y, this._v.z, 0.035);
     const k = 0.011 * this.led.level;
     c.set(col.r * k, col.g * k, col.b * k, 0.75);
     // the face redraws at up to 30 fps, only when something changed
@@ -404,7 +410,7 @@ export class Stackchan {
     g.lineCap = 'round';
     const gx = this.gaze.x * 14;
     const gy = this.gaze.y * 10;
-    const eyes = [[104 + gx, 104 + gy], [216 + gx, 104 + gy]];
+    const eyes = [[94 + gx, 96 + gy], [226 + gx, 96 + gy]];
     const happy = this.happy > 0 && this.state === 'on';
     if (happy) {
       // ^ ^ eyes, a wide smile, and a blush
@@ -418,19 +424,20 @@ export class Stackchan {
       g.arc(160 + gx * 0.5, 146 + gy * 0.5, 30, Math.PI * 0.15, Math.PI * 0.85);
       g.stroke();
     } else {
-      // round eyes; blinking and falling asleep squash them into lines
+      // StackChan's own face: two small dot eyes and a flat line of a mouth; blinking and falling asleep squash the
+      // dots into dashes
       const b = this.blink > 0 ? Math.sin((this.blink / 0.16) * Math.PI) : 0;
-      const open = Math.max(0.08, (1 - b) * (1 - shut));
+      const open = Math.max(0.12, (1 - b) * (1 - shut));
       for (const [x, y] of eyes) {
         g.beginPath();
-        g.ellipse(x, y, 13, Math.max(1.6, 13 * open), 0, 0, Math.PI * 2);
+        g.ellipse(x, y, 8 + (1 - open) * 3, Math.max(1.4, 8 * open), 0, 0, Math.PI * 2);
         g.fill();
       }
       g.beginPath();
-      const mw = 60;
+      const mw = 84;
       const mx = 160 + gx * 0.5;
-      const my = 160 + gy * 0.5;
-      g.roundRect(mx - mw / 2, my - 3.5, mw, 7, 3.5);
+      const my = 150 + gy * 0.5;
+      g.roundRect(mx - mw / 2, my - 2.5, mw, 5, 2.5);
       g.fill();
     }
     // colour readout while the LEDs are being set

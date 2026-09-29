@@ -9,15 +9,15 @@
     },
     "lamp": {
      "file": "lm0_lamp.webp",
-     "scale": 26.314063
+     "scale": 26.340429
     },
     "tv": {
      "file": "lm0_tv.webp",
-     "scale": 3.265625
+     "scale": 3.302148
     },
     "lampi": {
      "file": "lm0_lampi.webp",
-     "scale": 0.931828
+     "scale": 0.93833
     }
    },
    "albedo": {
@@ -33,7 +33,7 @@
     },
     "lamp": {
      "file": "lm1_lamp.webp",
-     "scale": 0.12951
+     "scale": 0.129376
     },
     "tv": {
      "file": "lm1_tv.webp",
@@ -41,7 +41,7 @@
     },
     "lampi": {
      "file": "lm1_lampi.webp",
-     "scale": 0.053979
+     "scale": 0.054181
     }
    },
    "albedo": {
