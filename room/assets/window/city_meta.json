@@ -117,8 +117,7 @@
   }
  ],
  "water": {
-  "texture": "city_water.webp",
-  "mobile_texture": "city_water_m.webp",
+  "texture": "city_water_m.webp",
   "class": "visible ría water and basin; bridge deck/embankments/pontoons excluded"
  },
  "lights": "city_lights: R lamps/windows, G footbridge LEDs, B flicker phase (intensities, filter-safe)"

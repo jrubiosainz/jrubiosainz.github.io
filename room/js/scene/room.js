@@ -2,14 +2,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/three/addons/loaders/GLTFLoader.js';
 import { LIGHTS, lightmapMaterial, dynamicMaterial, glowMaterial, discMaterial, glassMaterial } from './materials.js';
 import { dracoLoader } from './draco.js';
+import { loadTexture, flushTextures } from './texload.js';
 import { asset } from '../base.js';
 
 // three(x,y,z) = blender(x, z, -y)
 export const toThree = (b) => new THREE.Vector3(b[0], b[2], -b[1]);
 
-function loadTex(loader, url, { srgb = false, mips = true, aniso = 8, renderer } = {}) {
-  return loader.loadAsync(url).then((t) => {
-    t.flipY = false;                       // glTF UV convention (v down in image space)
+// glTF UV convention (v down in image space): no flip
+function loadTex(url, { srgb = false, mips = true, aniso = 8, renderer } = {}) {
+  return loadTexture(url, { flipY: false, srgb }).then((t) => {
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.generateMipmaps = mips;
     t.minFilter = mips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
@@ -53,7 +54,6 @@ export async function loadRoom({ renderer, base = asset('assets/'), quality = 'h
   const manager = new THREE.LoadingManager();
   const loader = new GLTFLoader(manager);
   loader.setDRACOLoader(dracoLoader());
-  const texLoader = new THREE.TextureLoader(manager);
   let loaded = 0;
   const total = 14;
   const tick = () => { loaded += 1; onProgress(Math.min(1, loaded / total)); };
@@ -74,14 +74,14 @@ export async function loadRoom({ renderer, base = asset('assets/'), quality = 'h
       at.scaleI = g.lampi.scale;
       at.lampiUrl = `${base}lightmaps/${g.lampi.file.replace('.webp', `${sfx}.webp`)}`;
     }
-    jobs.push(loadTex(texLoader, `${base}lightmaps/${g.amb.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.amb = t; tick(); }));
-    jobs.push(loadTex(texLoader, `${base}lightmaps/${g.lamp.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lamp = t; tick(); }));
-    jobs.push(loadTex(texLoader, `${base}lightmaps/${g.tv.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.tv = t; tick(); }));
-    jobs.push(loadTex(texLoader, `${base}lightmaps/${entry.albedo.file.replace('.webp', `${sfx}.webp`)}`, { srgb: true, renderer, aniso: 16 }).then((t) => { at.albedo = t; tick(); }));
+    jobs.push(loadTex(`${base}lightmaps/${g.amb.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.amb = t; tick(); }));
+    jobs.push(loadTex(`${base}lightmaps/${g.lamp.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lamp = t; tick(); }));
+    jobs.push(loadTex(`${base}lightmaps/${g.tv.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.tv = t; tick(); }));
+    jobs.push(loadTex(`${base}lightmaps/${entry.albedo.file.replace('.webp', `${sfx}.webp`)}`, { srgb: true, renderer, aniso: 16 }).then((t) => { at.albedo = t; tick(); }));
   }
   let dynTex = null;
   if (lmMeta.dynamic) {
-    jobs.push(loadTex(texLoader, `${base}lightmaps/${lmMeta.dynamic.file.replace('.webp', `${sfx}.webp`)}`, { srgb: true, renderer }).then((t) => { dynTex = t; tick(); }));
+    jobs.push(loadTex(`${base}lightmaps/${lmMeta.dynamic.file.replace('.webp', `${sfx}.webp`)}`, { srgb: true, renderer }).then((t) => { dynTex = t; tick(); }));
   }
   let gltf;
   jobs.push(loader.loadAsync(`${base}room.glb`, (e) => {
@@ -187,8 +187,9 @@ export async function loadRoom({ renderer, base = asset('assets/'), quality = 'h
   }
   // what can wait until the room is on screen: the lamp's bounce lightmaps
   const deferred = () => Promise.all(Object.values(atlases).map((at) => (at.lampiUrl && !at.lampi
-    ? loadTex(new THREE.TextureLoader(), at.lampiUrl, { renderer }).then((t) => {
+    ? loadTex(at.lampiUrl, { renderer }).then((t) => {
       at.lampi = t;
+      flushTextures(renderer);
       for (const m of at.materials) { m.uniforms.tLampI.value = t; m.uniforms.uScaleI.value = at.scaleI; }
     }).catch((err) => console.warn('lamp bounce lightmap unavailable', err))
     : null)));

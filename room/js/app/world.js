@@ -13,6 +13,7 @@ import { LampLight } from '../scene/lamplight.js';
 import { FineToy } from '../scene/finetoy.js';
 import { LAMP_HEAD } from '../scene/room.js';
 import { ownMaterial } from '../scene/materials.js';
+import { uploadTextures } from '../scene/texload.js';
 import { asset } from '../base.js';
 import { paintNotepad, paintPhoto, paintDiscLabel } from '../paint/index.js';
 import { workItems } from '../content.js';
@@ -52,6 +53,12 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   // the photo is fetched alongside the room; the poster is painted when it arrives (it never holds up the first frame)
   const photoP = loadImage(content.site?.photo);
   const posterP = loadImage(content.site?.poster);
+  // the city behind the window downloads and decodes alongside the room
+  const winP = createWindowView({
+    renderer, basePath: asset('assets/window/'), quality: stage.textures,
+    onLightning: (delay) => audio.thunder(delay),
+  });
+  winP.catch(() => {});                      // (awaited below; this only keeps an early failure from going "unhandled")
   const room = await loadRoom({ renderer, quality: stage.textures, onProgress: (p) => onProgress(p * 0.85) });
   const scene = new THREE.Scene();
   scene.add(room.scene);
@@ -59,10 +66,7 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   const get = (n) => room.byName.get(n);
 
   // city + rain
-  const win = await createWindowView({
-    renderer, basePath: asset('assets/window/'), quality: stage.textures,
-    onLightning: (delay) => audio.thunder(delay),
-  });
+  const win = await winP;
   get('Window_View')?.traverse((o) => { if (o.isMesh) { o.material = win.material; o.visible = true; o.renderOrder = -1; } });
   onProgress(0.9);
 
@@ -253,8 +257,11 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   lamp.exclude(get('Window_View'), get('Lamp_Joint'), ...LAMP_HEAD.map(get));
   scene.traverse((o) => { if (o.isMesh && (o.material?.transparent || o.material?.blending === THREE.AdditiveBlending)) lamp.exclude(o); });
 
-  // pre-compile every material behind the loader
-  onProgress(0.96);
+  // behind the loader: the textures go up to the GPU a few per frame, then every material compiles (on the driver's
+  // threads), so the first visible frame has nothing left to do. (Uploading while the shaders compile is slower:
+  // both queue on the same GPU process.)
+  onProgress(0.92);
+  await uploadTextures(renderer, scene, (f) => onProgress(0.92 + 0.07 * f));
   await renderer.compileAsync(scene, camera);
   onProgress(1);
   // after the first frame: what the room can do without for a moment

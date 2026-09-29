@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { asset } from '../base.js';
+import { loadTexture as decodeTexture, loadPixels, flushTextures } from './texload.js';
 
 const OPENING = new THREE.Vector2(1.32, 1.40);
 const DEFAULT_BASE = asset('assets/window/');
@@ -542,8 +543,11 @@ function configureTexture(tex, renderer) {
   return tex;
 }
 
-async function loadTexture(loader, url, renderer) {
-  return configureTexture(await loader.loadAsync(url), renderer);
+// the panorama is stored top row first and sampled with v up: flipped while decoding
+async function loadTexture(url, renderer, { srgb = true } = {}) {
+  const tex = configureTexture(await decodeTexture(url, { flipY: true, srgb }), renderer);
+  if (!srgb) tex.colorSpace = THREE.NoColorSpace;
+  return tex;
 }
 
 function resolveBase(basePath) {
@@ -597,21 +601,12 @@ function waterPoint([az, el], height) {
 // the footbridge (or a bank). Same mapping as panoUvFromDir(); v = 0 is the bottom row, like the GPU texture.
 async function loadMask(url, width = 1024) {
   try {
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = url;
-    await img.decode();
-    const h = Math.max(1, Math.round((width * img.naturalHeight) / img.naturalWidth));
-    const c = document.createElement('canvas');
-    c.width = width;
-    c.height = h;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, width, h);
-    const px = ctx.getImageData(0, 0, width, h).data;
-    const m = new Uint8Array(width * h);
-    for (let i = 0; i < m.length; i += 1) m[i] = px[i * 4];
-    return { w: width, h, m };
-  } catch {
+    const { w, h, data } = await loadPixels(url, width);
+    const m = new Uint8Array(w * h);
+    for (let i = 0; i < m.length; i += 1) m[i] = data[i * 4];
+    return { w, h, m };
+  } catch (err) {
+    console.warn('water mask unavailable: boat lights will not hide behind the bridge', err);
     return null;
   }
 }
@@ -708,21 +703,19 @@ export async function createWindowView({
   quality = 'high',
   onLightning = null,
 } = {}) {
-  const loader = new THREE.TextureLoader();
   const baseUrl = resolveBase(basePath);
   const meta = await loadMeta(baseUrl);
   const suffix = quality === 'mobile' || quality === 'low' ? '_m' : '';
   const cars = pathUniforms(meta.cars ?? [], 4);
+  // the water mask and the blurred copy are soft: 4096 and 2048 wide are plenty (and a fraction of the upload)
   const [river, color, lights, water, blur, mask] = await Promise.all([
     loadRiver(baseUrl),
-    loadTexture(loader, assetUrl(baseUrl, `city_color${suffix}.webp`), renderer),
-    loadTexture(loader, assetUrl(baseUrl, `city_lights${suffix}.webp`), renderer),
-    loadTexture(loader, assetUrl(baseUrl, `city_water${suffix}.webp`), renderer),
-    loadTexture(loader, assetUrl(baseUrl, 'city_blur.webp'), renderer),
+    loadTexture(assetUrl(baseUrl, `city_color${suffix}.webp`), renderer),
+    loadTexture(assetUrl(baseUrl, `city_lights${suffix}.webp`), renderer, { srgb: false }),
+    loadTexture(assetUrl(baseUrl, 'city_water_m.webp'), renderer, { srgb: false }),
+    loadTexture(assetUrl(baseUrl, 'city_blur.webp'), renderer),
     loadMask(assetUrl(baseUrl, 'city_water_m.webp')),
   ]);
-  lights.colorSpace = THREE.NoColorSpace;
-  water.colorSpace = THREE.NoColorSpace;
   const uniforms = {
     uColor: { value: color },
     uLights: { value: lights },
@@ -853,6 +846,7 @@ export async function createWindowView({
     uniforms,
     meta,
     tracks,
+    hasWaterMask: !!mask,                      // (without it boat lights would show through the bridge)
     update(time, dt = 0, camera = null) {
       uniforms.uTime.value = time;
       for (const track of tracks) {
@@ -930,10 +924,10 @@ export async function createWindowView({
 }
 
 export async function createWindowViewFallback({ basePath = DEFAULT_BASE, renderer } = {}) {
-  const loader = new THREE.TextureLoader();
   const baseUrl = resolveBase(basePath);
   const meta = await loadMeta(baseUrl);
-  const color = await loadTexture(loader, assetUrl(baseUrl, 'city_color_m.webp'), renderer);
+  const color = await loadTexture(assetUrl(baseUrl, 'city_color_m.webp'), renderer);
+  if (renderer) flushTextures(renderer);
   const material = new THREE.ShaderMaterial({
     name: 'WindowCityFallbackMaterial',
     vertexShader,
