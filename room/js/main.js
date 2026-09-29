@@ -6,6 +6,7 @@ import { Input } from './app/input.js';
 import { createHud } from './ui/hud.js';
 import { createLoader } from './ui/loader.js';
 import { AudioEngine } from './audio/engine.js';
+import { asset } from './base.js';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Boot: loader → assets → world → app. No WebGL2 (or a failure while loading) sends you to the lite page.
@@ -25,7 +26,7 @@ async function boot() {
   loader.setStatus('WARMING TUBE');
   const stageEl = document.getElementById('stage');
   const stage = new Stage(stageEl);
-  const audio = new AudioEngine({ basePath: 'assets/audio/' });
+  const audio = new AudioEngine({ basePath: asset('assets/audio/') });
   const audioReady = audio.init();
 
   let app = null;
@@ -101,9 +102,16 @@ async function boot() {
   });
   window.__app = app;
   window.__ready = true;
+  // now what can wait: the lamp's bounce lightmaps, the poster
+  world.loadDeferred?.();
 }
 
-boot().catch((err) => {
-  console.error(err);
-  fallback(err?.message || String(err));
-});
+// The published page may start this module twice (from the CDN, and from the site if the CDN is slow): the first copy
+// to get here runs the room.
+if (!window.__roomBooted) {
+  window.__roomBooted = true;
+  boot().catch((err) => {
+    console.error(err);
+    fallback(err?.message || String(err));
+  });
+}

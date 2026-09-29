@@ -16,9 +16,10 @@ export const rnd = (n) => {
   return x - Math.floor(x);
 };
 
-export async function loadFonts(list = ['28px VT323']) {
+export async function loadFonts(list = ['28px VT323'], timeoutMs = 6000) {
   if (!document?.fonts) return;
-  await Promise.all(list.map((font) => document.fonts.load(font).catch(() => null)));
+  const all = Promise.all(list.map((font) => document.fonts.load(font).catch(() => null)));
+  await Promise.race([all, new Promise((r) => setTimeout(r, timeoutMs))]);
 }
 
 export function makeCanvas(w, h) {

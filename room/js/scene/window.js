@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { asset } from '../base.js';
 
 const OPENING = new THREE.Vector2(1.32, 1.40);
-const DEFAULT_BASE = 'assets/window/';
+const DEFAULT_BASE = asset('assets/window/');
 
 const vertexShader = /* glsl */`
 varying vec2 vUv;

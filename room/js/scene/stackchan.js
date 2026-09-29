@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../vendor/three/addons/loaders/DRACOLoader.js';
+import { dracoLoader } from './draco.js';
+import { asset } from '../base.js';
 import { dynamicMaterial, LIGHTS } from './materials.js';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -44,16 +45,13 @@ export function colourName(h) {
   return best[1];
 }
 
-export async function loadStackchan({ base = 'assets/stackchan/' } = {}) {
+export async function loadStackchan({ base = asset('assets/stackchan/') } = {}) {
   const loader = new GLTFLoader();
-  const draco = new DRACOLoader();
-  draco.setDecoderPath('vendor/three/draco/');
-  loader.setDRACOLoader(draco);
+  loader.setDRACOLoader(dracoLoader());
   const [rig, gltf] = await Promise.all([
     fetch(`${base}rig.json`).then((r) => r.json()),
     loader.loadAsync(`${base}stackchan.glb`),
   ]);
-  draco.dispose();
   return new Stackchan(rig, gltf.scene);
 }
 

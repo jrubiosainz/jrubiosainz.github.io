@@ -13,6 +13,7 @@ import { LampLight } from '../scene/lamplight.js';
 import { FineToy } from '../scene/finetoy.js';
 import { LAMP_HEAD } from '../scene/room.js';
 import { ownMaterial } from '../scene/materials.js';
+import { asset } from '../base.js';
 import { paintNotepad, paintPhoto, paintDiscLabel } from '../paint/index.js';
 import { workItems } from '../content.js';
 
@@ -35,9 +36,10 @@ function loadImage(src) {
     if (!src) { resolve(null); return; }
     const img = new Image();
     img.decoding = 'async';
+    img.crossOrigin = 'anonymous';             // painted into canvases that become WebGL textures
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = src;
+    img.src = asset(src);
   });
 }
 
@@ -47,8 +49,9 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   const { renderer, camera } = stage;
   const reachyP = loadReachy().catch((err) => { console.warn('Reachy Mini unavailable', err); return null; });
   const stackP = loadStackchan().catch((err) => { console.warn('Stack-chan unavailable', err); return null; });
-  // fetched alongside the room so they never hold up the first frame
-  const imagesP = Promise.all([loadImage(content.site?.photo), loadImage(content.site?.poster)]);
+  // the photo is fetched alongside the room; the poster is painted when it arrives (it never holds up the first frame)
+  const photoP = loadImage(content.site?.photo);
+  const posterP = loadImage(content.site?.poster);
   const room = await loadRoom({ renderer, quality: stage.textures, onProgress: (p) => onProgress(p * 0.85) });
   const scene = new THREE.Scene();
   scene.add(room.scene);
@@ -57,7 +60,7 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
 
   // city + rain
   const win = await createWindowView({
-    renderer, basePath: 'assets/window/', quality: stage.textures,
+    renderer, basePath: asset('assets/window/'), quality: stage.textures,
     onLightning: (delay) => audio.thunder(delay),
   });
   get('Window_View')?.traverse((o) => { if (o.isMesh) { o.material = win.material; o.visible = true; o.renderOrder = -1; } });
@@ -87,11 +90,11 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
     }
     return tex;
   };
-  const [[img, posterImg]] = await Promise.all([imagesP, paintNotepad(deskPad, content)]);
+  const [img] = await Promise.all([photoP, paintNotepad(deskPad, content)]);
   await paintPhoto(photo, img);
   const deskPadTex = setRuntime('notepad', deskPad);
   setRuntime('photo', photo);
-  if (posterImg) setRuntime('poster', posterImg);
+  posterP.then((posterImg) => { if (posterImg) setRuntime('poster', posterImg); });
   // printed side of the CD
   const discMesh = meshOf(get('CDP_Disc'));
   if (discMesh?.material?.uniforms?.tLabel) {
@@ -254,5 +257,7 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   onProgress(0.96);
   await renderer.compileAsync(scene, camera);
   onProgress(1);
-  return { room, scene, win, tv, pc, vfd, lcd, tapes, props, held, picker, hoverSets, batch, deskPad, deskPadTex, get, tvScreenHit, occluders, reachy, stack, fine, lamp };
+  // after the first frame: what the room can do without for a moment
+  const loadDeferred = () => room.deferred();
+  return { room, scene, win, tv, pc, vfd, lcd, tapes, props, held, picker, hoverSets, batch, deskPad, deskPadTex, get, tvScreenHit, occluders, reachy, stack, fine, lamp, loadDeferred };
 }

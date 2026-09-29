@@ -20,14 +20,16 @@ export function rngFor(key) {
   return mulberry32(hashString(String(key)));
 }
 
-export async function loadPaintFonts() {
+// the handwriting and print on the paper props; a slow network never holds the room back more than a few seconds
+export async function loadPaintFonts(timeoutMs = 6000) {
   if (!document?.fonts) return;
-  await Promise.all([
+  const all = Promise.all([
     document.fonts.load('700 96px Caveat'),
     document.fonts.load('600 64px Caveat'),
     document.fonts.load('800 72px Archivo'),
     document.fonts.load('700 34px Courier Prime'),
   ].map((p) => p.catch(() => null)));
+  await Promise.race([all, new Promise((r) => setTimeout(r, timeoutMs))]);
 }
 
 export function cssColor(color, fallback = '#777') {

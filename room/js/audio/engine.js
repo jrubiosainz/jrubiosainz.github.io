@@ -1,3 +1,4 @@
+import { asset } from '../base.js';
 const STORAGE_KEY = 'sound';
 
 function dbToGain(db = 0) { return Math.pow(10, db / 20); }
@@ -5,7 +6,7 @@ function clamp(v, a = 0, b = 1) { return Math.max(a, Math.min(b, v)); }
 function noopHandle() { return { stop() {}, setVolume() {} }; }
 
 export class AudioEngine {
-  constructor({ basePath = 'assets/audio/' } = {}) {
+  constructor({ basePath = asset('assets/audio/') } = {}) {
     this.basePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
     this.manifest = {};
     this.buffers = new Map();

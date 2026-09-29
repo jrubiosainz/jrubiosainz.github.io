@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../vendor/three/addons/loaders/DRACOLoader.js';
+import { dracoLoader } from './draco.js';
+import { asset } from '../base.js';
 import { dynamicMaterial } from './materials.js';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -68,16 +69,13 @@ class Pose {
   angleTo(o) { return this.q.angleTo(o.q) + this.p.distanceTo(o.p) * 20; }
 }
 
-export async function loadReachy({ base = 'assets/reachy/' } = {}) {
+export async function loadReachy({ base = asset('assets/reachy/') } = {}) {
   const loader = new GLTFLoader();
-  const draco = new DRACOLoader();
-  draco.setDecoderPath('vendor/three/draco/');
-  loader.setDRACOLoader(draco);
+  loader.setDRACOLoader(dracoLoader());
   const [rig, gltf] = await Promise.all([
     fetch(`${base}rig.json`).then((r) => r.json()),
     loader.loadAsync(`${base}reachy.glb`),
   ]);
-  draco.dispose();
   return new Reachy(rig, gltf.scene);
 }
 

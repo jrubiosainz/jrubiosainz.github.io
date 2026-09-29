@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { App } from './app_more.js';
 import { SpeechBubble } from '../ui/bubble.js';
+import { asset } from '../base.js';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Reachy Mini on the desk: wake it up (click, or R) and it raises its head with its own "toudoum", then follows the
@@ -33,7 +34,7 @@ Object.assign(App.prototype, {
     };
     this._reachy = R;
     this.hud.setReachy?.(false);
-    fetch('assets/reachy/voice.json').then((res) => (res.ok ? res.json() : null)).then((v) => { R.voice = v; }).catch(() => {});
+    fetch(asset('assets/reachy/voice.json')).then((res) => (res.ok ? res.json() : null)).then((v) => { R.voice = v; }).catch(() => {});
     r.onEvent = (ev, data) => {
       if (ev === 'sound') this.audio.play(data, { volume: 0.85 });
       else if (ev === 'awake') {

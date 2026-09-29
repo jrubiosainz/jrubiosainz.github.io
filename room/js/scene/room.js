@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../vendor/three/addons/loaders/DRACOLoader.js';
 import { LIGHTS, lightmapMaterial, dynamicMaterial, glowMaterial, discMaterial, glassMaterial } from './materials.js';
+import { dracoLoader } from './draco.js';
+import { asset } from '../base.js';
 
 // three(x,y,z) = blender(x, z, -y)
 export const toThree = (b) => new THREE.Vector3(b[0], b[2], -b[1]);
@@ -48,15 +49,13 @@ function glossOf(p) {
   return s * (1 - p.rough * 0.6);
 }
 
-export async function loadRoom({ renderer, base = 'assets/', quality = 'high', onProgress = () => {} }) {
+export async function loadRoom({ renderer, base = asset('assets/'), quality = 'high', onProgress = () => {} }) {
   const manager = new THREE.LoadingManager();
   const loader = new GLTFLoader(manager);
-  const draco = new DRACOLoader(manager);
-  draco.setDecoderPath('vendor/three/draco/');
-  loader.setDRACOLoader(draco);
+  loader.setDRACOLoader(dracoLoader());
   const texLoader = new THREE.TextureLoader(manager);
   let loaded = 0;
-  const total = 16;
+  const total = 14;
   const tick = () => { loaded += 1; onProgress(Math.min(1, loaded / total)); };
   const lmMeta = await (await fetch(`${base}lightmaps/lightmaps.json`)).json();
   const sfx = quality === 'mobile' ? '_m' : '';
@@ -65,15 +64,16 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
   const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
   black.needsUpdate = true;
   for (const [a, entry] of Object.entries(lmMeta.atlases)) {
-    const at = { scales: new THREE.Vector3(), black, lampi: null, scaleI: 0 };
+    const at = { scales: new THREE.Vector3(), black, lampi: null, scaleI: 0, materials: [] };
     atlases[a] = at;
     const g = entry.groups;
     at.scales.set(g.amb.scale, g.lamp.scale, g.tv.scale);
-    // the lamp's bounce light (older bakes don't have it: the aimed lamp then only has its live direct light)
+    // the lamp's bounce light is only needed once the visitor aims the lamp: it loads after the first frame
+    // (deferred() below); older bakes don't have it, and the aimed lamp then only has its live direct light
     if (g.lampi) {
       at.scaleI = g.lampi.scale;
-      jobs.push(loadTex(texLoader, `${base}lightmaps/${g.lampi.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lampi = t; tick(); }));
-    } else loaded += 1;
+      at.lampiUrl = `${base}lightmaps/${g.lampi.file.replace('.webp', `${sfx}.webp`)}`;
+    }
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.amb.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.amb = t; tick(); }));
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.lamp.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lamp = t; tick(); }));
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.tv.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.tv = t; tick(); }));
@@ -88,7 +88,6 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
     if (e.total) onProgress(Math.min(1, (loaded + (e.loaded / e.total) * 4) / total));
   }).then((g) => { gltf = g; loaded += 4; onProgress(loaded / total); }));
   await Promise.all(jobs);
-  draco.dispose();
 
   const scene = gltf.scene;
   const byName = new Map();
@@ -147,6 +146,7 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
       let m = matCache.get(key);
       if (!m || runtime) {
         m = lightmapMaterial({ atlas: at, combined, gloss: glossOf(p), runtime: runtime ? null : label, tint: runtime ? new THREE.Color(1, 1, 1) : null, live });
+        at.materials.push(m);
         if (!runtime) matCache.set(key, m);
       }
       mesh.material = m;
@@ -185,5 +185,12 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
   if (L.Lamp_LightPos && L.Lamp_LightAim) {
     LIGHTS.lampDir.value.copy(toThree(L.Lamp_LightAim.pos)).sub(toThree(L.Lamp_LightPos.pos)).normalize();
   }
-  return { scene, byName, views, atlases, dynTex, specials, hoverables, dynamics, lmMeta };
+  // what can wait until the room is on screen: the lamp's bounce lightmaps
+  const deferred = () => Promise.all(Object.values(atlases).map((at) => (at.lampiUrl && !at.lampi
+    ? loadTex(new THREE.TextureLoader(), at.lampiUrl, { renderer }).then((t) => {
+      at.lampi = t;
+      for (const m of at.materials) { m.uniforms.tLampI.value = t; m.uniforms.uScaleI.value = at.scaleI; }
+    }).catch((err) => console.warn('lamp bounce lightmap unavailable', err))
+    : null)));
+  return { scene, byName, views, atlases, dynTex, specials, hoverables, dynamics, lmMeta, deferred };
 }

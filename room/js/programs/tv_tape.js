@@ -1,4 +1,5 @@
 import { clamp, fitLines, loadFonts, lerp, mod, rnd, wrapText } from './util.js';
+import { asset } from '../base.js';
 
 const visuals = ['terminal', 'wireframe', 'map', 'charts', 'starfield', 'screens', 'oscilloscope', 'photos'];
 
@@ -18,13 +19,15 @@ export default {
     const photos = visual === 'photos' ? (item.images || []).map((src) => {
       const img = new Image();
       img.decoding = 'async';
-      img.src = src;
+      img.crossOrigin = 'anonymous';           // drawn into the TV's canvas, which becomes a WebGL texture
+      img.src = asset(src);
       return img;
     }) : [];
     let video = null;
     if (visual === 'video' && item.video) {
       video = document.createElement('video');
-      video.src = item.video;
+      video.crossOrigin = 'anonymous';
+      video.src = asset(item.video);
       video.muted = true;
       video.loop = true;
       video.playsInline = true;
