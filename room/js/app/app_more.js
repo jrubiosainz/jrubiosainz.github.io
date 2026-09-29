@@ -241,8 +241,11 @@ Object.assign(App.prototype, {
     this.rig.update(dt);
     w.tapes.update(dt);
     w.props.update(dt, time);
+    w.lamp?.update(dt);
+    w.fine?.update(dt, time);
     w.held.update(dt, time);
     this._reachyUpdate?.(dt, time);
+    this._stackUpdate?.(dt, time);
     w.win.update(time, dt, this.stage.camera);
     w.tv.frame(time, dt);
     w.pc.frame(time, dt);
@@ -299,6 +302,8 @@ Object.assign(App.prototype, {
     const viewExp = { cd: 1.75, pc: 1.12, work: 1.05, window: 1.3 }[this.view] || 1.0;
     post.params.uExposure.value = damp(post.params.uExposure.value, viewExp * (1.0 + (1 - lampK) * 0.55), 1.5, dt);
     post.params.uBloom.value = 0.08 + (this.view === 'tv' || this.view === 'tape' ? 0.03 : 0);
+    // the aimed lamp's shadow map, once everything has moved for this frame
+    w.lamp?.renderShadow(this.stage.renderer, w.scene);
   },
 });
 

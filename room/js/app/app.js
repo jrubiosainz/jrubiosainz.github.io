@@ -8,7 +8,7 @@ import { workItems } from '../content.js';
 //   home · about (PC pager) · online (PC BBS) · pc (C) · work (notepad) · posts (teletext) · tv (Z) · cd (M)
 //   · tape/<id> (a tape in the VCR) · window (looking out at the city)
 // ---------------------------------------------------------------------------------------------------------------
-const HINT_HOME = 'C computer · M CD player · Z zoom TV · W look outside · R wake Reachy · 1–6 TV buttons';
+const HINT_HOME = 'C computer · M CD player · Z zoom TV · W look outside · R Reachy · S Stack-chan · 1–6 TV buttons';
 const V = (p, t, fov) => ({ pos: new THREE.Vector3(...p), target: new THREE.Vector3(...t), fov });
 // the LOOK OUTSIDE view: camera, framing and how far you can turn your head (radians)
 export const LOOK_CAM = {

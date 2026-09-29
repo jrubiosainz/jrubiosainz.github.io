@@ -2,10 +2,14 @@ import * as THREE from 'three';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Pointer + keyboard. Drag = free look; click = act on what is under the pointer; hover = tooltip + glow.
-// Keyboard: C computer · M CD · Z zoom TV · W window · 1–6 monitor buttons · N card · L lamp · Esc back. On the PC view
-// every key goes to the computer (a hidden input summons the on-screen keyboard on touch devices).
+// Press and hold: on the lamp, aim it (the shade follows the pointer until release); on Stack-chan, switch it off.
+// Wheel over Stack-chan: its LED colour. Rubbing the pointer over its head: a scratch.
+// Keyboard: C computer · M CD · Z zoom TV · W window · 1–6 monitor buttons · N card · L lamp · R Reachy ·
+// S Stack-chan · Esc back. On the PC view every key goes to the computer (a hidden input summons the on-screen
+// keyboard on touch devices).
 // ---------------------------------------------------------------------------------------------------------------
 const PC_VIEWS = new Set(['pc']);
+const HOLD = { lamp: [260, 380], stackchan: [700, 750] };   // ms to hold (mouse, touch) before it counts
 
 export class Input {
   constructor(app, canvas) {
@@ -36,7 +40,9 @@ export class Input {
     addEventListener('pointermove', (e) => this.onMove(e));
     addEventListener('pointerup', (e) => this.onUp(e));
     addEventListener('pointercancel', () => this.onCancel());
-    canvas.addEventListener('pointerleave', () => { this.ndc.set(9, 9); this.dirty = true; });
+    canvas.addEventListener('pointerleave', () => { if (!this.aiming) { this.ndc.set(9, 9); this.dirty = true; } });
+    // a long press is ours (lamp, Stack-chan): no context menu, no text selection callout
+    canvas.addEventListener('contextmenu', (e) => { if (this.hold || this.aiming) e.preventDefault(); });
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: true });
     addEventListener('keydown', (e) => this.onKey(e, true));
     addEventListener('keyup', (e) => this.onKey(e, false));
@@ -58,15 +64,60 @@ export class Input {
     this._setNdc(e);
     this.down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, type: e.pointerType };
     this.dragging = false;
+    this.holdFired = false;
+    this.hold = null;
+    // something to press and hold?
+    if (this.app.view === 'home') {
+      const p = this.pick();
+      const kind = p?.action === 'lamp' ? 'lamp' : p?.action === 'stackchan' && this.app.world.stack?.awake ? 'stackchan' : null;
+      if (kind) this.hold = { kind, t: this.down.t, ms: HOLD[kind][e.pointerType === 'touch' ? 1 : 0] };
+    }
     this.app.audio.context?.state === 'suspended' && this.app.audio.context.resume();
   }
 
+  // called every frame: a hold that has lasted long enough fires
+  _checkHold() {
+    const h = this.hold;
+    if (!h || !this.down || this.dragging || this.holdFired) return;
+    if (performance.now() - h.t < h.ms) return;
+    this.holdFired = true;
+    this.hold = null;
+    const app = this.app;
+    if (h.kind === 'lamp') {
+      if (!app.lampGrab?.()) return;
+      this.aiming = true;
+      this.canvas.classList.add('is-aiming');
+      app.hud.showTooltip('AIM THE LAMP', this.client?.x ?? 0, this.client?.y ?? 0);
+      app.lampAim?.(this.ndc);
+    } else if (h.kind === 'stackchan') {
+      app.stackToggle?.();
+    }
+  }
+
+  // hover state is stale (e.g. Stack-chan's label changed): re-pick on the next frame
+  refresh() { this.dirty = true; this.hoverKey = '__refresh__'; }
+
   onMove(e) {
+    const px = this.client?.x;
     this._setNdc(e);
+    if (this.aiming) {
+      this.app.lampAim?.(this.ndc);
+      this.app.hud.showTooltip('AIM THE LAMP', e.clientX, e.clientY);
+      return;
+    }
+    // rubbing Stack-chan's head: horizontal pointer strokes over it (mouse hover, or a finger on it)
+    if (px !== undefined && this.current?.group === 'stackchan' && (!this.down || this.hold || this.down.type === 'touch')) {
+      this.app.stackRub?.(e.clientX - px);
+    }
     if (!this.down) return;
     const dx = e.clientX - this.down.x;
     const dy = e.clientY - this.down.y;
+    // moving cancels a press-and-hold (a finger rubbing Stack-chan must not switch it off)
+    if (this.hold && Math.hypot(dx, dy) > (this.down.type === 'touch' ? 10 : 5)) this.hold = null;
+    // a finger rubbing Stack-chan is not a camera drag
+    if (this.down.type === 'touch' && this.current?.group === 'stackchan' && this.app.world.stack?.awake) return;
     if (!this.dragging && Math.hypot(dx, dy) > (this.down.type === 'touch' ? 10 : 5)) {
+      this.hold = null;
       this.dragging = true;
       this.app.rig.dragStart();
       this.canvas.classList.add('is-dragging');
@@ -82,19 +133,33 @@ export class Input {
   onUp(e) {
     if (!this.down) return;
     const wasDrag = this.dragging;
+    const held = this.holdFired;
     this.down = null;
     this.dragging = false;
+    this.hold = null;
+    this.holdFired = false;
     this.canvas.classList.remove('is-dragging');
+    if (this.aiming) { this._endAim(); return; }
     if (wasDrag) { this.app.rig.dragEnd(); return; }
+    if (held) return;
     if (e.target !== this.canvas) return;
     this._setNdc(e);
     this.click();
   }
 
+  _endAim() {
+    this.aiming = false;
+    this.canvas.classList.remove('is-aiming');
+    this.app.lampRelease?.();
+    this.dirty = true;
+  }
+
   onCancel() {
     if (this.dragging) this.app.rig.dragEnd();
+    if (this.aiming) this._endAim();
     this.down = null;
     this.dragging = false;
+    this.hold = null;
     this.canvas.classList.remove('is-dragging');
   }
 
@@ -102,6 +167,7 @@ export class Input {
     const app = this.app;
     if (app.view === 'posts') app.world.tv.input({ type: 'key', key: e.deltaY > 0 ? 'ArrowDown' : 'ArrowUp', down: true });
     else if (app.view === 'pc') this._pcKey(e.deltaY > 0 ? 'PageDown' : 'PageUp', e.deltaY > 0 ? 'PageDown' : 'PageUp');
+    else if (this.current?.group === 'stackchan') app.stackWheel?.(e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY);
   }
 
   // ---- picking --------------------------------------------------------------------------------------------------
@@ -137,13 +203,20 @@ export class Input {
     if (p.action === 'knob') return `knob:${p.index}`;
     if (p.action === 'vcrbtn') return `vcrbtn:${p.button}`;
     if (p.action === 'cdbtn') return `cdbtn:${p.button}`;
-    if (p.group === 'cdp' || p.group === 'lamp' || p.group === 'phone' || p.group === 'notepad' || p.group === 'reachy') return `group:${p.group}`;
+    if (['cdp', 'lamp', 'phone', 'notepad', 'reachy', 'stackchan', 'fine'].includes(p.group)) return `group:${p.group}`;
     return null;
   }
 
   updateHover(dt) {
     const app = this.app;
-    if (this.dragging) return;
+    this._checkHold();
+    // on the desk view, a turned head stays turned while the pointer rests on something it can use (the diorama on the
+    // dresser, the clock side of the room…); it drifts back once the pointer leaves it
+    const L = app.rig.look;
+    if (app.view === 'home' && !this.dragging && L.releasedAt >= 0 && this.current?.action && this.current.action !== 'none') {
+      L.releasedAt = app.rig.time;
+    }
+    if (this.dragging || this.aiming) return;
     if (this.dirty || app.rig.moving) {
       this.dirty = false;
       const p = this.pick();
@@ -178,7 +251,14 @@ export class Input {
     if (p.action === 'tv' && app.view === 'tv') return '';
     if (p.action === 'tv') return 'ZOOM TV';
     if (p.action === 'vcr') return this.app.tape ? `VCR · ${this.app.tape.item.title.toUpperCase()}` : 'VCR';
-    if (p.action === 'lamp') return app.world.props.lampOn ? 'LAMP · OFF' : 'LAMP · ON';
+    if (p.action === 'lamp') return `${app.world.props.lampOn ? 'LAMP · OFF' : 'LAMP · ON'}${app.world.lamp?.ok ? ' · HOLD TO AIM' : ''}`;
+    if (p.action === 'fine') return 'THIS IS FINE · PRESS';
+    if (p.action === 'stackchan') {
+      const s = app.world.stack;
+      if (!s || s.state === 'off') return 'STACK-CHAN · SWITCH ON';
+      if (s.busy) return 'STACK-CHAN';
+      return s.led.on ? `STACK-CHAN · ${s.colourName} · WHEEL` : 'STACK-CHAN · LIGHTS';
+    }
     if (p.action === 'phone') return 'PHONE';
     if (p.action === 'reachy') {
       const st = app.world.reachy?.state;
@@ -212,6 +292,8 @@ export class Input {
       case 'lamp': app.world.props.toggleLamp(); break;
       case 'phone': app.world.props.liftPhone(); break;
       case 'reachy': app.reachyToggle(); break;
+      case 'stackchan': app.stackClick?.(); break;
+      case 'fine': app.fineTrigger?.(); break;
       case 'work': app.navigate('work'); break;
       case 'pc':
         if (app.view !== 'pc') app.navigate('pc');
@@ -292,6 +374,7 @@ export class Input {
     if (lower === 'z') { app.navigate(app.route === 'tv' ? 'home' : 'tv'); return; }
     if (lower === 'w') { app.navigate(app.view === 'window' ? 'home' : 'window'); return; }
     if (lower === 'r') { app.reachyToggle(); return; }
+    if (lower === 's') { app.stackToggle?.(); return; }
     if (lower === 'n') {
       if (!app.cardHidden && app.hud.cardVisible()) {
         app.hud.hideCard();

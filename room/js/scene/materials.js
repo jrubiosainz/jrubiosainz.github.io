@@ -16,7 +16,114 @@ export const LIGHTS = {
   winPos: { value: new THREE.Vector3() },
   time: { value: 0 },
   exposure: { value: 1 },
+  // the aimable desk lamp (site/js/scene/lamplight.js): 0 = the baked lamp, 1 = a live, shadow-mapped spot at the
+  // shade's mouth + the baked bounce ('lampi'), used once the visitor has turned the shade somewhere else
+  lampRT: { value: 0 },
+  spotPos: { value: new THREE.Vector3() },
+  spotDir: { value: new THREE.Vector3(0, -1, 0) },
+  spotCone: { value: new THREE.Vector2(0.588, 3.1) },       // cos(half angle), 1 / ((1 - cos) * blend): Cycles' spot
+  spotCol: { value: new THREE.Color(1, 0.74, 0.5) },        // colour * P / (4 pi^2): baked irradiance units
+  spotShadow: { value: null },
+  spotMatrix: { value: new THREE.Matrix4() },
+  spotShadowP: { value: new THREE.Vector4(6, 1 / 1024, 0.03, 0) },   // far, texel, light radius, shadows on
+  // small live lights with no shadow: Stack-chan's LEDs, the diorama's flames. xyz + soft radius / rgb + range
+  pointPos: { value: [0, 1, 2, 3].map(() => new THREE.Vector4(0, -9, 0, 0.02)) },
+  pointCol: { value: [0, 1, 2, 3].map(() => new THREE.Vector4(0, 0, 0, 0.3)) },
 };
+
+// live lights (spot with PCSS-ish soft shadows + point lights), shared by the baked and the moving materials
+const LIVE = /* glsl */`
+#include <packing>
+uniform float uLampRT;
+uniform vec3 uSpotPos;
+uniform vec3 uSpotDir;
+uniform vec2 uSpotCone;
+uniform vec3 uSpotCol;
+uniform sampler2D tSpotShadow;
+uniform mat4 uSpotMatrix;
+uniform vec4 uSpotShadowP;
+uniform vec4 uPointPos[4];
+uniform vec4 uPointCol[4];
+
+const vec2 POISSON[12] = vec2[](
+  vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621),
+  vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893),
+  vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
+
+float spotDepth(vec2 uv) { return unpackRGBAToDepth(texture2D(tSpotShadow, uv)) * uSpotShadowP.x; }
+
+// soft shadow: a blocker search sizes the filter (contact shadows stay sharp, far ones soften like the bake's)
+float spotShadow(vec3 P, vec3 N, vec3 L, float dist) {
+  if (uSpotShadowP.w < 0.5) return 1.0;
+  vec4 sc = uSpotMatrix * vec4(P + N * 0.003, 1.0);
+  if (sc.w <= 0.0) return 1.0;
+  vec2 uv = sc.xy / sc.w * 0.5 + 0.5;
+  if (uv.x <= 0.0 || uv.x >= 1.0 || uv.y <= 0.0 || uv.y >= 1.0) return 1.0;
+  float bias = 0.004 + 0.012 * (1.0 - max(dot(N, L), 0.0)) + dist * 0.004;
+  float texel = uSpotShadowP.y;
+  float blockers = 0.0;
+  float bsum = 0.0;
+  for (int i = 0; i < 12; i++) {
+    float z = spotDepth(uv + POISSON[i] * texel * 7.0);
+    if (z < dist - bias) { bsum += z; blockers += 1.0; }
+  }
+  if (blockers < 0.5) return 1.0;
+  float avg = bsum / blockers;
+  // penumbra width at the receiver (world), then in shadow-map texels (the map spans ~2 * dist * tan(56°))
+  float pen = uSpotShadowP.z * (dist - avg) / max(avg, 0.02);
+  float rad = clamp(pen / (dist * 2.96) / texel, 1.2, 14.0);
+  float lit = 0.0;
+  for (int i = 0; i < 12; i++) {
+    vec2 o = POISSON[i] * texel * rad;
+    lit += step(dist - bias, spotDepth(uv + o));
+  }
+  return lit / 12.0;
+}
+
+// direct light of the live spot, in the bake's irradiance units (same formula as Cycles' spot light)
+vec3 spotDirect(vec3 N, vec3 P) {
+  vec3 Lv = uSpotPos - P;
+  float d = length(Lv);
+  vec3 L = Lv / max(d, 1e-4);
+  float c = dot(-L, uSpotDir);
+  float att = clamp((c - uSpotCone.x) * uSpotCone.y, 0.0, 1.0);
+  att = att * att * (3.0 - 2.0 * att);
+  float ndl = max(dot(N, L), 0.0);
+  if (att <= 0.0 || ndl <= 0.0) return vec3(0.0);
+  return uSpotCol * att * ndl / max(d * d, 0.0025) * spotShadow(P, N, L, d);
+}
+
+vec3 pointLights(vec3 N, vec3 P) {
+  vec3 e = vec3(0.0);
+  for (int i = 0; i < 4; i++) {
+    vec4 c = uPointCol[i];
+    if (c.r + c.g + c.b > 1e-4) {
+      vec3 Lv = uPointPos[i].xyz - P;
+      float d2 = dot(Lv, Lv);
+      float r = uPointPos[i].w;
+      float win = clamp(1.0 - d2 / (c.w * c.w), 0.0, 1.0);
+      // a little wrap: LEDs and flames are small, broad glows
+      e += c.rgb * clamp(dot(N, Lv * inversesqrt(d2)) * 0.8 + 0.2, 0.0, 1.0) * win * win / (d2 + r * r);
+    }
+  }
+  return e;
+}
+`;
+
+function liveUniforms() {
+  return {
+    uLampRT: LIGHTS.lampRT,
+    uSpotPos: LIGHTS.spotPos,
+    uSpotDir: LIGHTS.spotDir,
+    uSpotCone: LIGHTS.spotCone,
+    uSpotCol: LIGHTS.spotCol,
+    tSpotShadow: LIGHTS.spotShadow,
+    uSpotMatrix: LIGHTS.spotMatrix,
+    uSpotShadowP: LIGHTS.spotShadowP,
+    uPointPos: LIGHTS.pointPos,
+    uPointCol: LIGHTS.pointCol,
+  };
+}
 
 const COMMON = /* glsl */`
 #define PI 3.141592653589793
@@ -81,11 +188,15 @@ void main() {
 
 const lmFragment = /* glsl */`
 ${COMMON}
+${LIVE}
 uniform sampler2D tAlb;
 uniform sampler2D tAmb;
 uniform sampler2D tLamp;
+uniform sampler2D tLampI;
 uniform sampler2D tTv;
 uniform vec3 uScales;
+uniform float uScaleI;
+uniform float uRtLamp;
 uniform float uCombined;
 uniform sampler2D tRuntime;
 uniform float uRuntime;
@@ -111,6 +222,15 @@ void main() {
   vec3 amb = dec(tAmb, uScales.x);
   vec3 lamp = dec(tLamp, uScales.y);
   vec3 tv = dec(tTv, uScales.z);
+  vec3 N = normalize(vN);
+  if (!gl_FrontFacing) N = -N;
+  // translucent 'combined' surfaces (curtains, shades) store radiance: live light reaches them through a fabric albedo
+  float liveK = uCombined > 0.5 ? 0.55 : 1.0;
+  // the lamp turned away from its baked pose: live direct light + the baked bounce (the lamp's own head keeps its bake)
+  if (uLampRT > 0.001 && uRtLamp > 0.5 && uLampK > 0.001) {
+    vec3 live = dec(tLampI, uScaleI) + spotDirect(N, vP) * liveK;
+    lamp = mix(lamp, live, uLampRT);
+  }
   vec3 albedo = vAlb.w > 1.5 ? vAlb.rgb : texture2D(tAlb, vLm).rgb;
   if (uRuntime > 0.5) albedo = texture2D(tRuntime, vUv).rgb * uTint;
   else if (uRuntime > 0.25) albedo = uTint;
@@ -118,13 +238,12 @@ void main() {
   vec3 Eamb = amb * uAmbK;
   vec3 Elamp = lamp * uLampK * (vMat.w > 0.0 ? vMat.w : 1.0);
   vec3 Etv = tv * uTvK;
-  vec3 col = albedo * (Eamb + Elamp + Etv);
+  vec3 Epts = pointLights(N, vP) * liveK;
+  vec3 col = albedo * (Eamb + Elamp + Etv + Epts);
   // shadow-aware analytic gloss from the three baked groups
   float rough = vMat.x;
   float specK = vMat.y * uGloss;
   if (specK > 0.001 && uCombined < 0.5) {
-    vec3 N = normalize(vN);
-    if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(cameraPosition - vP);
     vec3 F0 = mix(vec3(0.04), albedo, vMat.z);
     vec3 s = specFrom(N, V, vP, uLampPos, 0.03, Elamp, rough, F0)
@@ -138,13 +257,18 @@ void main() {
 }
 `;
 
-export function lightmapMaterial({ atlas, runtime = null, tint = null, combined = false, hover = false, gloss = 1 }) {
+export function lightmapMaterial({ atlas, runtime = null, tint = null, combined = false, hover = false, gloss = 1,
+  live = true }) {
   const uniforms = {
     tAlb: { value: atlas.albedo },
     tAmb: { value: atlas.amb },
     tLamp: { value: atlas.lamp },
+    tLampI: { value: atlas.lampi || atlas.black },
     tTv: { value: atlas.tv },
     uScales: { value: atlas.scales },
+    uScaleI: { value: atlas.scaleI ?? 0 },
+    uRtLamp: { value: live ? 1 : 0 },
+    ...liveUniforms(),
     uCombined: { value: combined ? 1 : 0 },
     tRuntime: { value: runtime },
     uRuntime: { value: runtime ? 1 : (tint ? 0.5 : 0) },
@@ -193,6 +317,7 @@ void main() {
 
 const dynFragment = /* glsl */`
 ${COMMON}
+${LIVE}
 uniform sampler2D tDyn;
 uniform sampler2D tRuntime;
 uniform float uRuntime;
@@ -205,6 +330,7 @@ uniform float uHover;
 uniform float uOcclusion;
 uniform vec3 uRim;       // window back-light on silhouettes (0 = off)
 uniform float uSpill;    // lamp light outside the beam: the glowing shade and its bounce off the desk (0 = off)
+uniform float uPointK;   // how much the small live lights (LEDs, flames) reach it
 varying vec2 vUv;
 varying vec2 vDyn;
 varying vec3 vN;
@@ -221,7 +347,7 @@ void main() {
   vec3 Etv = uTvK * uTvPower * max(dot(N, Lt), 0.0) / (dt * dt + 0.02);
   vec3 Eamb = uAmbient * uAmbK * (0.65 + 0.35 * N.y) * uOcclusion;
   vec3 Espill = uLampCol * uLampK * uSpill * (0.3 + 0.7 * max(dot(N, Ll), 0.0)) / (dl * dl + 0.02);
-  vec3 col = albedo * (Eamb + Elamp + Etv + Espill);
+  vec3 col = albedo * (Eamb + Elamp + Etv + Espill + pointLights(N, vP) * uPointK);
   vec3 F0 = mix(vec3(0.04), albedo, uMat.z);
   col += min((specFrom(N, V, vP, uLampPos, 0.03, Elamp, uMat.x, F0)
             + specFrom(N, V, vP, uTvPos, 0.3, Etv, uMat.x, F0)) * uMat.y, vec3(24.0));
@@ -247,6 +373,7 @@ export function dynamicMaterial({ dynTex, color = new THREE.Color(0.5, 0.5, 0.5)
       uOcclusion: { value: 1 },
       uRim: { value: new THREE.Color(0, 0, 0) },
       uSpill: { value: 0 },
+      uPointK: { value: 0.35 },
       uAmbK: LIGHTS.ambK,
       uLampK: LIGHTS.lampK,
       uTvK: LIGHTS.tvRoom,
@@ -255,6 +382,7 @@ export function dynamicMaterial({ dynTex, color = new THREE.Color(0.5, 0.5, 0.5)
       uLampDir: LIGHTS.lampDir,
       uTvPos: LIGHTS.tvPos,
       uWinPos: LIGHTS.winPos,
+      ...liveUniforms(),
     },
     vertexShader: dynVertex,
     fragmentShader: dynFragment,

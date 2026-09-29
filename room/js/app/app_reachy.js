@@ -5,8 +5,9 @@ import { SpeechBubble } from '../ui/bubble.js';
 // ---------------------------------------------------------------------------------------------------------------
 // Reachy Mini on the desk: wake it up (click, or R) and it raises its head with its own "toudoum", then follows the
 // pointer and explains whatever the pointer rests on: the tape stacks (career, personal projects), the lamp (off or
-// on, depending), the TV and its buttons, the video, the CD player, the notepad, the computer, the window, the menu
-// at the top… in a speech bubble and out loud (English or Spanish, following the browser). Click it again and it
+// on, depending, and that it can be aimed), the TV and its buttons, the video, the CD player, the notepad, the
+// computer, the window, Stack-chan, the "This is fine" diorama, the menu at the top… in a speech bubble and out loud
+// (English or Spanish, following the browser). Click it again and it
 // goes back to sleep ("pfiou"). The lines and their voice live in assets/reachy/voice.json (tools/reachy_voice.py).
 // ---------------------------------------------------------------------------------------------------------------
 const LANG = /^es\b/i.test(navigator.language || '') ? 'es' : 'en';
@@ -186,6 +187,13 @@ Object.assign(App.prototype, {
       case 'key': return h('h_pc', 'pc');
       case 'window': return h('h_window', 'window');
       case 'reachy': return h('h_reachy', 'reachy');
+      case 'stackchan': {
+        const s = w.stack;
+        if (!s) return null;
+        if (s.state === 'off') return h('h_stack_off', 'stackchan');
+        return s.led.on ? h('h_stack_led', 'stackchan:leds') : h('h_stack_on', 'stackchan');
+      }
+      case 'fine': return h('h_fine', 'fine');
       default: return null;
     }
   },

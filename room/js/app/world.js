@@ -8,6 +8,10 @@ import { HeldNotepad } from '../scene/notepad.js';
 import { Picker } from '../scene/picker.js';
 import { mergeStatic } from '../scene/merge.js';
 import { loadReachy } from '../scene/reachy.js';
+import { loadStackchan } from '../scene/stackchan.js';
+import { LampLight } from '../scene/lamplight.js';
+import { FineToy } from '../scene/finetoy.js';
+import { LAMP_HEAD } from '../scene/room.js';
 import { ownMaterial } from '../scene/materials.js';
 import { paintNotepad, paintPhoto, paintDiscLabel } from '../paint/index.js';
 import { workItems } from '../content.js';
@@ -42,6 +46,7 @@ function loadImage(src) {
 export async function buildWorld({ stage, content, audio, onProgress = () => {}, emitTv, emitPc }) {
   const { renderer, camera } = stage;
   const reachyP = loadReachy().catch((err) => { console.warn('Reachy Mini unavailable', err); return null; });
+  const stackP = loadStackchan().catch((err) => { console.warn('Stack-chan unavailable', err); return null; });
   // fetched alongside the room so they never hold up the first frame
   const imagesP = Promise.all([loadImage(content.site?.photo), loadImage(content.site?.poster)]);
   const room = await loadRoom({ renderer, quality: stage.textures, onProgress: (p) => onProgress(p * 0.85) });
@@ -110,6 +115,12 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   // Reachy Mini (lit live, never merged): it stands where the pencil cup was
   const reachy = await reachyP;
   if (reachy) scene.add(reachy.root);
+  // Stack-chan (lit live too): where the VCR remote was
+  const stack = await stackP;
+  if (stack) scene.add(stack.root);
+  // the diorama on the dresser and the aimable desk lamp
+  const fine = new FineToy({ room, audio });
+  const lamp = new LampLight({ room, quality: stage.textures });
 
   // picking --------------------------------------------------------------------------------------------------
   const picker = new Picker(camera);
@@ -118,6 +129,16 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
     const info = { label: 'REACHY', action: 'reachy' };
     picker.addProxy('reachy', reachy.root, new THREE.CylinderGeometry(0.08, 0.08, 0.19, 20), info, new THREE.Vector3(0, 0.095, 0));
     picker.addProxy('reachy', reachy.root, new THREE.BoxGeometry(0.2, 0.17, 0.19), info, new THREE.Vector3(0.011, 0.23, 0));
+  }
+  // Stack-chan: its base, and its head (the head's proxy rides on the tilt servo, so it follows the head)
+  if (stack) {
+    const info = { label: 'STACK-CHAN', action: 'stackchan' };
+    picker.addProxy('stackchan', stack.root, new THREE.BoxGeometry(0.056, 0.03, 0.046), info, new THREE.Vector3(0, 0.015, 0));
+    const hb = stack.rig.head_box;
+    const hc = new THREE.Vector3(hb.center[0], hb.center[2], -hb.center[1]);
+    const tp = new THREE.Vector3(stack.rig.tilt_pivot[0], stack.rig.tilt_pivot[2], -stack.rig.tilt_pivot[1]);
+    picker.addProxy('stackchan', stack.tiltPivot, new THREE.BoxGeometry(hb.size[0] + 0.008, hb.size[2] + 0.008, hb.size[1] + 0.01),
+      { ...info, part: 'head' }, hc.sub(tp));
   }
   const G = (name, node, info, opts) => picker.addGroup(name, get(node), info, opts);
   G('tv', 'TV_Root', { label: 'ZOOM TV', action: 'tv' });
@@ -131,6 +152,7 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   G('notepad', 'Notepad_Root', { label: 'WORK · NOTEPAD', action: 'work' });
   G('tapes', 'Tapes_Root', { label: 'TAPES', action: 'tapes' });
   G('window', 'Window_View', { label: 'LOOK OUTSIDE', action: 'window' }, { pad: 0.002 });
+  if (fine.ok) G('fine', 'Fine_Root', { label: 'THIS IS FINE', action: 'fine' }, { pad: 0.004 });
   // the curtains hang in front of the glass: they catch the pointer instead of the window behind them
   G('curtainL', 'Curtain_L', { action: 'none' }, { pad: 0 });
   G('curtainR', 'Curtain_R', { action: 'none' }, { pad: 0 });
@@ -179,6 +201,8 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   own('group:phone', get('Phone_Root'));
   own('group:notepad', get('Notepad_Root'));
   if (reachy) hoverSets.set('group:reachy', reachy.materials);
+  if (stack) hoverSets.set('group:stackchan', stack.materials);
+  own('group:fine', get('Fine_Root'));
 
   // occluders: the plant sits between the desk and the PC; it dissolves while the camera is inside it.
   // Its meshes get their own materials (one per source material), so they merge into their own batches.
@@ -200,7 +224,7 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   const keep = new Set();
   const keepTree = (node) => node?.traverse((o) => { if (o.isMesh) keep.add(o); });
   for (const t of tapes.tapes) keepTree(t.anchor);
-  ['CDP_Root', 'Lamp_Root', 'Phone_Root', 'Notepad_Root', 'PC_PowerSwitch'].forEach((n) => keepTree(get(n)));
+  ['CDP_Root', 'Lamp_Root', 'Phone_Root', 'Notepad_Root', 'PC_PowerSwitch', 'Fine_Root'].forEach((n) => keepTree(get(n)));
   for (const p of props.presses.values()) keepTree(p.obj);
   for (const k of props.knobs) keepTree(k?.obj);
   const batch = mergeStatic(room.scene, keep);
@@ -220,9 +244,13 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
   };
   picker.addFine(tvMesh, { group: 'tv', action: 'tv', label: 'ZOOM TV' });
 
+  // the aimed lamp's shadows: not from its own head, the window or anything see-through (glass, acrylic flames)
+  lamp.exclude(get('Window_View'), get('Lamp_Joint'), ...LAMP_HEAD.map(get));
+  scene.traverse((o) => { if (o.isMesh && (o.material?.transparent || o.material?.blending === THREE.AdditiveBlending)) lamp.exclude(o); });
+
   // pre-compile every material behind the loader
   onProgress(0.96);
   await renderer.compileAsync(scene, camera);
   onProgress(1);
-  return { room, scene, win, tv, pc, vfd, lcd, tapes, props, held, picker, hoverSets, batch, deskPad, deskPadTex, get, tvScreenHit, occluders, reachy };
+  return { room, scene, win, tv, pc, vfd, lcd, tapes, props, held, picker, hoverSets, batch, deskPad, deskPadTex, get, tvScreenHit, occluders, reachy, stack, fine, lamp };
 }

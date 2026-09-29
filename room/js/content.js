@@ -253,6 +253,8 @@ The quickest way to reach me is a message on [LinkedIn](https://www.linkedin.com
       { what: 'Reachy’s voice', who: 'Azure AI Speech neural voices' },
       { what: 'The view outside', who: 'Jesús’s own photo of the ría, taken into a rainy night with Azure OpenAI' },
       { what: 'The poster', who: 'Burgos Cathedral, an original screen-print style illustration made with Azure OpenAI' },
+      { what: 'Stack-chan', who: 'the open-source robot by Shinya Ishikawa (stack-chan project), modelled here from Jesús’s own' },
+      { what: 'The diorama', who: 'an original rubber duck keeping calm, after the “This is fine” comic by KC Green' },
       { what: 'Rendering', who: 'three.js (MIT)' },
       { what: 'Type', who: 'Archivo, VT323, Caveat, Courier Prime and others (SIL Open Font License)' },
     ],

@@ -39,6 +39,8 @@ function matParams(mat) {
 // Lamp irradiance multiplier for surfaces right next to the bulb (the bake is physically right, but a 2 cm point
 // light saturates them to white; photos of real lamps show a warm, saturated interior instead).
 const LAMP_GAIN = { Lamp_Shade_Interior: 0.085, Lamp_Socket: 0.35, Lamp_Joint: 0.5 };
+// the lamp's swivelling head: it keeps its baked light (lit from inside) wherever it points
+export const LAMP_HEAD = ['Lamp_Shade', 'Lamp_Shade_Interior', 'Lamp_Socket', 'Lamp_Bulb'];
 
 function glossOf(p) {
   if (p.rough > 0.85) return 0;
@@ -54,17 +56,24 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
   loader.setDRACOLoader(draco);
   const texLoader = new THREE.TextureLoader(manager);
   let loaded = 0;
-  const total = 14;
+  const total = 16;
   const tick = () => { loaded += 1; onProgress(Math.min(1, loaded / total)); };
   const lmMeta = await (await fetch(`${base}lightmaps/lightmaps.json`)).json();
   const sfx = quality === 'mobile' ? '_m' : '';
   const atlases = {};
   const jobs = [];
+  const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  black.needsUpdate = true;
   for (const [a, entry] of Object.entries(lmMeta.atlases)) {
-    const at = { scales: new THREE.Vector3() };
+    const at = { scales: new THREE.Vector3(), black, lampi: null, scaleI: 0 };
     atlases[a] = at;
     const g = entry.groups;
     at.scales.set(g.amb.scale, g.lamp.scale, g.tv.scale);
+    // the lamp's bounce light (older bakes don't have it: the aimed lamp then only has its live direct light)
+    if (g.lampi) {
+      at.scaleI = g.lampi.scale;
+      jobs.push(loadTex(texLoader, `${base}lightmaps/${g.lampi.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lampi = t; tick(); }));
+    } else loaded += 1;
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.amb.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.amb = t; tick(); }));
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.lamp.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.lamp = t; tick(); }));
     jobs.push(loadTex(texLoader, `${base}lightmaps/${g.tv.file.replace('.webp', `${sfx}.webp`)}`, { renderer }).then((t) => { at.tv = t; tick(); }));
@@ -123,7 +132,8 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
       if (!at || !mesh.geometry.attributes.uv1) { mesh.visible = false; continue; }
       const runtime = ex.albedo === 'runtime';
       const combined = ex.lm_mode === 'combined';
-      const key = `${ex.lm_atlas}|${combined}|${runtime ? node.name : ''}|${label?.uuid || ''}|${glossOf(p).toFixed(2)}|${p.rough.toFixed(2)}`;
+      const live = !LAMP_HEAD.includes(mesh.userData.nodeName);
+      const key = `${ex.lm_atlas}|${combined}|${runtime ? node.name : ''}|${label?.uuid || ''}|${glossOf(p).toFixed(2)}|${p.rough.toFixed(2)}|${live}`;
       // per-vertex material params for the gloss so that meshes can share one material per atlas
       const n = mesh.geometry.attributes.position.count;
       const arr = new Float32Array(n * 4);
@@ -136,7 +146,7 @@ export async function loadRoom({ renderer, base = 'assets/', quality = 'high', o
       mesh.geometry.setAttribute('aAlb', new THREE.BufferAttribute(alb, 4));
       let m = matCache.get(key);
       if (!m || runtime) {
-        m = lightmapMaterial({ atlas: at, combined, gloss: glossOf(p), runtime: runtime ? null : label, tint: runtime ? new THREE.Color(1, 1, 1) : null });
+        m = lightmapMaterial({ atlas: at, combined, gloss: glossOf(p), runtime: runtime ? null : label, tint: runtime ? new THREE.Color(1, 1, 1) : null, live });
         if (!runtime) matCache.set(key, m);
       }
       mesh.material = m;

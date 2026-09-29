@@ -1,7 +1,7 @@
 import content from './content.js';
 import { Stage, webglAvailable } from './app/stage.js';
 import { buildWorld } from './app/world.js';
-import { App } from './app/app_reachy.js';
+import { App } from './app/app_toys.js';
 import { Input } from './app/input.js';
 import { createHud } from './ui/hud.js';
 import { createLoader } from './ui/loader.js';

@@ -38,6 +38,12 @@ body {
   cursor: grabbing !important;
 }
 
+/* aiming the desk lamp (press and hold on it): a crosshair while the shade follows the pointer */
+.stage-canvas.is-aiming {
+  cursor: crosshair !important;
+  touch-action: none;
+}
+
 /* The canvas fades in from black once the first frames are ready (the loader sits on top meanwhile). */
 .stage-canvas {
   opacity: 0;

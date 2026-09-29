@@ -1,0 +1,74 @@
+{
+ "source": "modelled likeness of Stack-chan (github.com/stack-chan/stack-chan, by Shinya Ishikawa)",
+ "units": "metres; robot frame: X right, Y back, Z up, origin under the base; face toward -Y",
+ "pan_pivot": [
+  0.0,
+  0.002,
+  0.0
+ ],
+ "tilt_pivot": [
+  0.0,
+  0.004,
+  0.030000000000000002
+ ],
+ "pan_parts": [
+  "Stackchan_Disc",
+  "Stackchan_Neck"
+ ],
+ "tilt_parts": [
+  "Stackchan_Head",
+  "Stackchan_Glass",
+  "Stackchan_Screen",
+  "Stackchan_LED_L",
+  "Stackchan_LED_R",
+  "Stackchan_Button"
+ ],
+ "screen": {
+  "name": "Stackchan_Screen",
+  "w": 0.0408,
+  "h": 0.0306,
+  "px": [
+   320,
+   240
+  ],
+  "center": [
+   0.0,
+   -0.014920000000000001,
+   0.06445
+  ]
+ },
+ "leds": {
+  "L": [
+   -0.031,
+   0.0065,
+   0.056
+  ],
+  "R": [
+   0.031,
+   0.0065,
+   0.056
+  ],
+  "h": 0.036
+ },
+ "head_top": [
+  0.0,
+  0.0,
+  0.093
+ ],
+ "head_box": {
+  "center": [
+   0.0,
+   0.0,
+   0.05950000137090683
+  ],
+  "size": [
+   0.058,
+   0.032,
+   0.067
+  ]
+ },
+ "height": 0.093,
+ "sleep_tilt": 0.2617993877991494,
+ "awake_tilt": -0.05235987755982989,
+ "triangles": 3466
+}
