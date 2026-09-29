@@ -5,15 +5,15 @@
    "groups": {
     "amb": {
      "file": "lm0_amb.webp",
-     "scale": 9.891406
+     "scale": 9.925781
     },
     "lamp": {
      "file": "lm0_lamp.webp",
-     "scale": 26.090625
+     "scale": 26.279688
     },
     "tv": {
      "file": "lm0_tv.webp",
-     "scale": 3.224805
+     "scale": 3.091602
     }
    },
    "albedo": {
@@ -25,11 +25,11 @@
    "groups": {
     "amb": {
      "file": "lm1_amb.webp",
-     "scale": 4.597656
+     "scale": 4.567578
     },
     "lamp": {
      "file": "lm1_lamp.webp",
-     "scale": 0.176038
+     "scale": 0.172815
     },
     "tv": {
      "file": "lm1_tv.webp",

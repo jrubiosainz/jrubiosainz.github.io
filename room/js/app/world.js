@@ -42,6 +42,8 @@ function loadImage(src) {
 export async function buildWorld({ stage, content, audio, onProgress = () => {}, emitTv, emitPc }) {
   const { renderer, camera } = stage;
   const reachyP = loadReachy().catch((err) => { console.warn('Reachy Mini unavailable', err); return null; });
+  // fetched alongside the room so they never hold up the first frame
+  const imagesP = Promise.all([loadImage(content.site?.photo), loadImage(content.site?.poster)]);
   const room = await loadRoom({ renderer, quality: stage.textures, onProgress: (p) => onProgress(p * 0.85) });
   const scene = new THREE.Scene();
   scene.add(room.scene);
@@ -80,10 +82,11 @@ export async function buildWorld({ stage, content, audio, onProgress = () => {},
     }
     return tex;
   };
-  const [img] = await Promise.all([loadImage(content.site?.photo), paintNotepad(deskPad, content)]);
+  const [[img, posterImg]] = await Promise.all([imagesP, paintNotepad(deskPad, content)]);
   await paintPhoto(photo, img);
   const deskPadTex = setRuntime('notepad', deskPad);
   setRuntime('photo', photo);
+  if (posterImg) setRuntime('poster', posterImg);
   // printed side of the CD
   const discMesh = meshOf(get('CDP_Disc'));
   if (discMesh?.material?.uniforms?.tLabel) {

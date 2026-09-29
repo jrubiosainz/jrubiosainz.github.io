@@ -22,6 +22,7 @@ const content = {
     location: 'Burgos, Spain',
     city: 'Port Meridian',                // fictional city outside the window (weather channel, teletext)
     photo: 'assets/images/photo.jpg',     // taped to the PC monitor (square works best). Make one: tools/photo_from_source.py
+    poster: 'assets/images/poster.jpg',   // on the wall right of the window (A2 proportions, 1200 x 1700). tools/poster_from_art.py
     lang: 'en',
     url: 'https://jrubiosainz.github.io/', // public address (feed.xml links, social cards); '' while it has none
   },
@@ -251,6 +252,7 @@ The quickest way to reach me is a message on [LinkedIn](https://www.linkedin.com
       { what: 'Reachy Mini', who: 'robot design, meshes and wake/sleep sounds by Pollen Robotics (Apache-2.0)' },
       { what: 'Reachy’s voice', who: 'Azure AI Speech neural voices' },
       { what: 'The view outside', who: 'Jesús’s own photo of the ría, taken into a rainy night with Azure OpenAI' },
+      { what: 'The poster', who: 'Burgos Cathedral, an original screen-print style illustration made with Azure OpenAI' },
       { what: 'Rendering', who: 'three.js (MIT)' },
       { what: 'Type', who: 'Archivo, VT323, Caveat, Courier Prime and others (SIL Open Font License)' },
     ],
