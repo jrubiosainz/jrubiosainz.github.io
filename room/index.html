@@ -19,11 +19,12 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="alternate" type="application/rss+xml" title="Posts" href="feed.xml">
   <!-- the import map goes before any module preload: Firefox ignores one that comes later -->
-  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
-  <link rel="preload" href="assets/fonts/Archivo-normal-400_900-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fonts/VT323-normal-400-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="modulepreload" href="vendor/three/three.module.js">
-  <link rel="modulepreload" href="vendor/three/three.core.js">
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/vendor/three/three.module.js" }, "scopes": { "./": { "three": "./vendor/three/three.module.js" } } }</script>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/assets/fonts/Archivo-normal-400_900-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/assets/fonts/VT323-normal-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/vendor/three/three.module.js">
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/vendor/three/three.core.js">
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/js/main.js">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/loader.css">
@@ -38,6 +39,14 @@
       <p>This room needs JavaScript and WebGL.<br><a href="fallback/">Open the lite version →</a></p>
     </div>
   </noscript>
-  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    // The room's code, and with it every asset (js/base.js), from the CDN copy of this very version of the site;
+    // from the site itself if the CDN fails or is too slow (js/main.js boots once).
+    const CDN = 'https://cdn.jsdelivr.net/gh/jrubiosainz/jrubiosainz.github.io@bfd9b695a0a4630ae7e718a7e3671a4d93df45e2/room/';
+    let fromSite = null;
+    const local = () => { fromSite ||= import('./js/main.js'); };
+    const slow = setTimeout(local, 15000);
+    import(CDN + 'js/main.js').then(() => clearTimeout(slow), (err) => { console.warn('CDN unavailable', err); clearTimeout(slow); local(); });
+  </script>
 </body>
 </html>
