@@ -98,18 +98,25 @@ export class FineToy {
 
   get burning() { return this.t >= 0 && this.t < SHOW.hold + SHOW.fade; }
 
+  // the flames light at once; the sound follows (right away, or once the sound has been switched on and decoded)
   trigger() {
     if (!this.ok) return;
-    const restart = this.burning;
     this.t = 0;
     this.press = 0.14;
-    this.audio?.play('fine_click', { volume: 0.8 });
-    if (!restart || !this.crackle) {
+    this.sound();
+  }
+
+  sound() {
+    if (!this.burning || !this.audio?.enabled) return;
+    const at = this.t;
+    if (at < 0.3) this.audio.play('fine_click', { volume: 0.8 });
+    if (!this.crackle || this._fading) {
       this.crackle?.stop(0.1);
-      this.crackle = this.audio?.loop('fine_crackle_loop', { volume: 0.9, fade: 0.25, bus: 'sfx' }) || null;
+      this.crackle = this.audio.loop('fine_crackle_loop', { volume: 0.9, fade: 0.25, bus: 'sfx' }) || null;
+      this._fading = false;
     }
     this.voice?.stop(0.08);
-    this.voice = this.audio?.play('fine_voice', { volume: 1.0, delay: SHOW.voice }) || null;
+    this.voice = at < SHOW.voice + 0.6 ? this.audio.play('fine_voice', { volume: 1.0, delay: Math.max(0, SHOW.voice - at) }) : null;
   }
 
   update(dt, time) {

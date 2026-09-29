@@ -106,9 +106,9 @@ Object.assign(App.prototype, {
   fineTrigger() {
     const f = this.world.fine;
     if (!f?.ok) return;
-    const go = () => f.trigger();
-    if (!this.audio.enabled) this.setSound(true).then(go, go);
-    else go();
+    f.trigger();
+    // a press can start the sound, like the CD player: the fire and the voice join in once it is ready
+    if (!this.audio.enabled) this.setSound(true).then(() => f.sound(), () => {});
   },
 
   // ---- aiming the lamp ------------------------------------------------------------------------------------------
